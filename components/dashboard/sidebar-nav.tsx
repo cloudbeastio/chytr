@@ -24,7 +24,7 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { href: '/', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/work-orders', label: 'Work Orders', icon: ClipboardList },
   { href: '/agents', label: 'Agents', icon: Bot },
   { href: '/jobs', label: 'Jobs', icon: Calendar, proGated: true },
@@ -40,7 +40,7 @@ export function SidebarNav() {
   return (
     <nav className="flex flex-col gap-1 px-3 py-4 flex-1">
       {NAV_ITEMS.map(({ href, label, icon: Icon, proGated }) => {
-        const isActive = pathname === href || (href !== '/' && pathname.startsWith(href))
+        const isActive = pathname === href || (href !== '/dashboard' && pathname.startsWith(href))
         return (
           <Link
             key={href}
