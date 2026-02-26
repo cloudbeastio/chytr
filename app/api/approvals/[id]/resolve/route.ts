@@ -3,9 +3,10 @@ import { createSupabaseServiceClient } from '@/lib/supabase'
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const body = await req.json()
     const { decision, decided_by } = body
 
@@ -14,7 +15,6 @@ export async function PATCH(
     }
 
     const supabase = createSupabaseServiceClient()
-
     const status = decision === 'rejected' ? 'rejected' : 'approved'
 
     const { error } = await supabase
@@ -25,7 +25,7 @@ export async function PATCH(
         decided_by: decided_by ?? null,
         decided_at: new Date().toISOString(),
       })
-      .eq('id', params.id)
+      .eq('id', id)
       .eq('status', 'pending')
 
     if (error) {

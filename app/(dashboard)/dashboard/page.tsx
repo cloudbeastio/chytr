@@ -102,13 +102,21 @@ function StatsSkeleton() {
 async function RecentActivity() {
   const supabase = createSupabaseServiceClient()
 
-  const { data: workOrders } = await supabase
+  const { data: rawWorkOrders } = await supabase
     .from('work_orders')
     .select('id, objective, status, created_at, agent_id')
     .order('created_at', { ascending: false })
     .limit(10)
 
-  if (!workOrders?.length) {
+  const workOrders = (rawWorkOrders ?? []) as unknown as Array<{
+    id: string
+    objective: string | null
+    status: WorkOrderStatus
+    created_at: string
+    agent_id: string | null
+  }>
+
+  if (!workOrders.length) {
     return (
       <Card>
         <CardHeader>

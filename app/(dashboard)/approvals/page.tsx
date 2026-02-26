@@ -26,7 +26,7 @@ async function ApprovalsData() {
       .limit(50),
   ])
 
-  const allApprovals = [...(pending ?? []), ...(history ?? [])]
+  const allApprovals = [...(pending ?? []), ...(history ?? [])] as unknown as Array<{ agent_id: string | null }>
   const agentIds = [...new Set(allApprovals.map((a) => a.agent_id).filter(Boolean))] as string[]
 
   const { data: agents } =

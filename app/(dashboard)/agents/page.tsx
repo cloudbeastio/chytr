@@ -38,7 +38,7 @@ async function fetchData() {
   ])
 
   const repoCounts: Record<string, number> = {}
-  for (const r of repos ?? []) {
+  for (const r of (repos ?? []) as unknown as Array<{ agent_id: string | null }>) {
     if (r.agent_id) repoCounts[r.agent_id] = (repoCounts[r.agent_id] ?? 0) + 1
   }
 

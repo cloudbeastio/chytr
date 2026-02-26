@@ -11,8 +11,8 @@ export function createSupabaseClient() {
   return createClient<Database>(supabaseUrl, supabaseAnonKey)
 }
 
-export function createSupabaseServerClient() {
-  const cookieStore = cookies()
+export async function createSupabaseServerClient() {
+  const cookieStore = await cookies()
   return createServerClient<Database>(supabaseUrl, supabaseAnonKey, {
     cookies: {
       getAll() {
@@ -28,7 +28,9 @@ export function createSupabaseServerClient() {
 }
 
 export function createSupabaseServiceClient() {
-  return createClient<Database>(supabaseUrl, supabaseServiceKey, {
+  // Service client is used for writes/admin ops — untyped to avoid PostgREST v12
+  // inference conflicts with the custom Database type. Casts are applied at call sites.
+  return createClient(supabaseUrl, supabaseServiceKey, {
     auth: { autoRefreshToken: false, persistSession: false },
   })
 }

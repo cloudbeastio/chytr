@@ -147,6 +147,37 @@ export interface InstanceConfig {
   updated_at: string
 }
 
+export interface AgentStatRow {
+  agent_id: string
+  name: string
+  status: AgentStatus
+  last_heartbeat: string | null
+  total_runs: number
+  completed: number
+  failed: number
+  running: number
+  avg_duration_ms: number | null
+  total_tokens_in: number | null
+  total_tokens_out: number | null
+  total_cost: number | null
+}
+
+export interface ToolStatRow {
+  tool_name: string
+  call_count: number
+  success_count: number
+  failure_count: number
+  avg_duration_ms: number | null
+  last_used_at: string | null
+}
+
+export interface SkillStatRow {
+  skill_name: string
+  agent_id: string | null
+  load_count: number
+  last_used_at: string | null
+}
+
 export interface Database {
   public: {
     Tables: {
@@ -161,13 +192,15 @@ export interface Database {
       instance_config: { Row: InstanceConfig; Insert: Partial<InstanceConfig>; Update: Partial<InstanceConfig> }
     }
     Views: {
-      agent_stats: { Row: Record<string, unknown> }
-      tool_stats: { Row: Record<string, unknown> }
-      skill_stats: { Row: Record<string, unknown> }
+      agent_stats: { Row: AgentStatRow }
+      tool_stats: { Row: ToolStatRow }
+      skill_stats: { Row: SkillStatRow }
     }
     Functions: {
       get_work_order: { Args: { p_work_order_id: string }; Returns: WorkOrder & { repo_url: string } }
       match_knowledge: { Args: { query_embedding: number[]; match_threshold: number; match_count: number; p_agent_type?: string }; Returns: Knowledge[] }
     }
+    Enums: Record<string, never>
+    CompositeTypes: Record<string, never>
   }
 }

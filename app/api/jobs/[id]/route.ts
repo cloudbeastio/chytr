@@ -3,18 +3,14 @@ import { createSupabaseServiceClient } from '@/lib/supabase'
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const body = await req.json()
     const allowedFields = [
-      'name',
-      'cron_expression',
-      'agent_id',
-      'repo_id',
-      'work_order_template',
-      'description',
-      'enabled',
+      'name', 'cron_expression', 'agent_id', 'repo_id',
+      'work_order_template', 'description', 'enabled',
     ]
 
     const updates: Record<string, unknown> = {}
@@ -30,7 +26,7 @@ export async function PATCH(
     const { data, error } = await supabase
       .from('scheduled_jobs')
       .update(updates)
-      .eq('id', params.id)
+      .eq('id', id)
       .select()
       .single()
 
@@ -48,11 +44,12 @@ export async function PATCH(
 
 export async function DELETE(
   _req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const supabase = createSupabaseServiceClient()
-    const { error } = await supabase.from('scheduled_jobs').delete().eq('id', params.id)
+    const { error } = await supabase.from('scheduled_jobs').delete().eq('id', id)
 
     if (error) {
       console.error('[jobs/DELETE] supabase error', error)

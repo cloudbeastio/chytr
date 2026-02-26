@@ -14,14 +14,18 @@ export interface JobWithData extends ScheduledJob {
 async function JobsContent() {
   const supabase = createSupabaseServiceClient()
 
-  const [{ data: jobs }, { data: agents }, { data: repos }] = await Promise.all([
+  const [{ data: rawJobs }, { data: rawAgents }, { data: rawRepos }] = await Promise.all([
     supabase.from('scheduled_jobs').select('*').order('created_at', { ascending: false }),
     supabase.from('agents').select('id, name').order('name'),
     supabase.from('agent_repos').select('id, agent_id, repo_url'),
   ])
 
-  const jobIds = (jobs ?? []).map((j) => j.id)
-  const { data: runs } = jobIds.length
+  const jobs = (rawJobs ?? []) as unknown as ScheduledJob[]
+  const agents = (rawAgents ?? []) as unknown as Pick<Agent, 'id' | 'name'>[]
+  const repos = (rawRepos ?? []) as unknown as Pick<AgentRepo, 'id' | 'agent_id' | 'repo_url'>[]
+
+  const jobIds = jobs.map((j) => j.id)
+  const { data: rawRuns } = jobIds.length
     ? await supabase
         .from('job_runs')
         .select('*')
@@ -29,18 +33,20 @@ async function JobsContent() {
         .order('started_at', { ascending: false })
     : { data: [] as JobRun[] }
 
+  const runs = (rawRuns ?? []) as unknown as JobRun[]
+
   const latestRunByJob: Record<string, JobRun> = {}
-  for (const run of runs ?? []) {
+  for (const run of runs) {
     if (!latestRunByJob[run.job_id]) latestRunByJob[run.job_id] = run
   }
 
   const agentMap: Record<string, string> = {}
-  for (const a of agents ?? []) agentMap[a.id] = a.name
+  for (const a of agents) agentMap[a.id] = a.name ?? ''
 
   const repoMap: Record<string, string> = {}
-  for (const r of repos ?? []) repoMap[r.id] = r.repo_url
+  for (const r of repos) if (r.id) repoMap[r.id] = r.repo_url
 
-  const jobsWithData: JobWithData[] = (jobs ?? []).map((job) => ({
+  const jobsWithData: JobWithData[] = jobs.map((job) => ({
     ...job,
     latestRun: latestRunByJob[job.id] ?? null,
     agentName: job.agent_id ? (agentMap[job.agent_id] ?? null) : null,
@@ -50,8 +56,8 @@ async function JobsContent() {
   return (
     <JobsTable
       jobs={jobsWithData}
-      agents={(agents ?? []) as Pick<Agent, 'id' | 'name'>[]}
-      repos={(repos ?? []) as Pick<AgentRepo, 'id' | 'agent_id' | 'repo_url'>[]}
+      agents={agents}
+      repos={repos}
     />
   )
 }

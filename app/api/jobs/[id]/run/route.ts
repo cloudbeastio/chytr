@@ -3,15 +3,16 @@ import { createSupabaseServiceClient } from '@/lib/supabase'
 
 export async function POST(
   _req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const supabase = createSupabaseServiceClient()
 
     const { data: job, error: jobError } = await supabase
       .from('scheduled_jobs')
       .select('*')
-      .eq('id', params.id)
+      .eq('id', id)
       .single()
 
     if (jobError || !job) {
@@ -48,10 +49,7 @@ export async function POST(
         status: 'pending',
         started_at: now,
       }),
-      supabase
-        .from('scheduled_jobs')
-        .update({ last_run_at: now })
-        .eq('id', job.id),
+      supabase.from('scheduled_jobs').update({ last_run_at: now }).eq('id', id),
     ])
 
     if (runError) {

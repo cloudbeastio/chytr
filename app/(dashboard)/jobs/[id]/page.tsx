@@ -1,5 +1,6 @@
 import { createSupabaseServiceClient } from '@/lib/supabase'
 import { notFound } from 'next/navigation'
+import type { JobRun, ScheduledJob } from '@/lib/database.types'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
@@ -43,21 +44,23 @@ function formatDate(iso: string): string {
 }
 
 interface PageProps {
-  params: { id: string }
+  params: Promise<{ id: string }>
 }
 
 export default async function JobDetailPage({ params }: PageProps) {
+  const { id } = await params
   const supabase = createSupabaseServiceClient()
 
-  const { data: job } = await supabase
+  const { data: rawJob } = await supabase
     .from('scheduled_jobs')
     .select('*')
-    .eq('id', params.id)
+    .eq('id', id)
     .single()
 
-  if (!job) notFound()
+  if (!rawJob) notFound()
+  const job = rawJob as unknown as ScheduledJob
 
-  const [{ data: runs }, { data: agents }, { data: repos }] = await Promise.all([
+  const [{ data: rawRuns }, { data: rawAgents }, { data: rawRepos }] = await Promise.all([
     supabase
       .from('job_runs')
       .select('*')
@@ -68,8 +71,12 @@ export default async function JobDetailPage({ params }: PageProps) {
     supabase.from('agent_repos').select('id, agent_id, repo_url'),
   ])
 
-  const agentName = agents?.find((a) => a.id === job.agent_id)?.name ?? null
-  const repoUrl = repos?.find((r) => r.id === job.repo_id)?.repo_url ?? null
+  const runs = rawRuns as unknown as JobRun[]
+  const agents = (rawAgents ?? []) as unknown as Array<{ id: string; name: string }>
+  const repos = (rawRepos ?? []) as unknown as Array<{ id: string; agent_id: string | null; repo_url: string }>
+
+  const agentName = agents.find((a) => a.id === job.agent_id)?.name ?? null
+  const repoUrl = repos.find((r) => r.id === job.repo_id)?.repo_url ?? null
 
   return (
     <div className="space-y-6 max-w-5xl">

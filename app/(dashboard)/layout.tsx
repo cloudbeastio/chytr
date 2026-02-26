@@ -1,7 +1,9 @@
 import { Separator } from '@/components/ui/separator'
 import { Badge } from '@/components/ui/badge'
 import { SidebarNav } from '@/components/dashboard/sidebar-nav'
+import { UserMenu } from '@/components/dashboard/user-menu'
 import { loadLicenseFromDB } from '@/lib/license'
+import { createSupabaseServerClient } from '@/lib/supabase'
 import { Activity } from 'lucide-react'
 
 const TIER_BADGE: Record<string, { label: string; variant: 'default' | 'secondary' | 'outline' }> =
@@ -15,6 +17,22 @@ export default async function DashboardLayout({ children }: { children: React.Re
   const license = await loadLicenseFromDB()
   const tier = license?.tier ?? 'free'
   const tierBadge = TIER_BADGE[tier] ?? TIER_BADGE.free
+
+  // Get authenticated user (null in dev mode — UserMenu handles it)
+  let userEmail: string | null = null
+  let userName: string | null = null
+  let userAvatar: string | null = null
+
+  if (process.env.CHYTR_DEV_MODE !== 'true') {
+    const supabase = await createSupabaseServerClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    userEmail = user?.email ?? null
+    userName = user?.user_metadata?.full_name ?? user?.user_metadata?.name ?? null
+    userAvatar = user?.user_metadata?.avatar_url ?? null
+  } else {
+    userEmail = 'dev@localhost'
+    userName = 'Dev Mode'
+  }
 
   return (
     <div className="flex h-screen bg-background overflow-hidden">
@@ -59,13 +77,11 @@ export default async function DashboardLayout({ children }: { children: React.Re
         {/* Top header */}
         <header className="flex items-center h-14 px-6 shrink-0 border-b border-border">
           <div className="flex-1" />
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-muted-foreground">
-              {license?.email ?? 'No license active'}
-            </span>
+          <div className="flex items-center gap-3">
             <Badge variant={tierBadge.variant} className="text-[10px] px-1.5 py-0">
               {tierBadge.label}
             </Badge>
+            <UserMenu email={userEmail} name={userName} avatarUrl={userAvatar} />
           </div>
         </header>
 

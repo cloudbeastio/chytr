@@ -3,14 +3,10 @@ import { createSupabaseServiceClient } from '@/lib/supabase'
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params
-    if (!id) {
-      return NextResponse.json({ error: 'id is required' }, { status: 400 })
-    }
-
+    const { id } = await params
     const body = (await req.json()) as {
       name?: string
       description?: string | null
