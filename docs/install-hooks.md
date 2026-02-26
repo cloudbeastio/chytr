@@ -7,7 +7,7 @@ The hooks skill streams Cursor agent actions to your chytr dashboard in real tim
 Run this in the root of any repo where you want hooks active:
 
 ```bash
-curl -sL https://raw.githubusercontent.com/jlondrejcka/chytr/main/packages/hooks-skill/install.sh | bash
+curl -sL https://raw.githubusercontent.com/cloudbeastio/chytr/main/packages/hooks-skill/install.sh | bash
 ```
 
 This creates:

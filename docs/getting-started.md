@@ -9,7 +9,7 @@
 ## Self-hosted with Docker Compose
 
 ```bash
-git clone https://github.com/jlondrejcka/chytr
+git clone https://github.com/cloudbeastio/chytr
 cd chytr
 cp .env.example .env
 ```

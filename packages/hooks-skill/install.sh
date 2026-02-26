@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-REPO="https://raw.githubusercontent.com/jlondrejcka/chytr/main"
+REPO="https://raw.githubusercontent.com/cloudbeastio/chytr/main"
 INSTALL_DIR=".cursor"
 
 echo "Installing chytr hooks skill..."

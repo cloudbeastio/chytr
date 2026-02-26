@@ -7,7 +7,7 @@ Installs Cursor agent hooks that POST structured log events to a chytr instance.
 From the root of any repo:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/jlondrejcka/chytr/main/packages/hooks-skill/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/cloudbeastio/chytr/main/packages/hooks-skill/install.sh | bash
 ```
 
 Or clone and run locally:

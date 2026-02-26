@@ -7,7 +7,7 @@ Work orders for AI agents. Define structured tasks, link them to GitHub repos, a
 ## Quick start
 
 ```bash
-git clone https://github.com/jlondrejcka/chytr
+git clone https://github.com/cloudbeastio/chytr
 cd chytr
 cp .env.example .env
 docker compose up
@@ -41,7 +41,7 @@ Trigger (UI / API / cron)
 ## Install hooks skill
 
 ```bash
-curl -sL https://raw.githubusercontent.com/jlondrejcka/chytr/main/packages/hooks-skill/install.sh | bash
+curl -sL https://raw.githubusercontent.com/cloudbeastio/chytr/main/packages/hooks-skill/install.sh | bash
 ```
 
 Then set env vars:
