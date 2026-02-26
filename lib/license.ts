@@ -27,6 +27,18 @@ UPFtJ7lXkGtHPp4f0p4AAQIDAQAB
 
 let cachedLicense: LicensePayload | null = null
 
+function devModeLicense(): LicensePayload {
+  return {
+    sub: 'dev',
+    email: 'dev@localhost',
+    tier: 'team',
+    features: [...TIER_FEATURES.team],
+    limits: { knowledge_entries: 25000, log_retention_days: 90, agent_repos: 999 },
+    iat: 0,
+    exp: 9999999999,
+  }
+}
+
 export async function validateLicenseJWT(
   token: string
 ): Promise<{ valid: boolean; license?: LicensePayload; error?: string }> {
@@ -64,6 +76,11 @@ export async function validateLicenseJWT(
 export async function validateAndStoreLicense(
   key: string
 ): Promise<{ valid: boolean; license?: LicensePayload; error?: string }> {
+  if (process.env.CHYTR_DEV_MODE === 'true') {
+    cachedLicense = devModeLicense()
+    return { valid: true, license: cachedLicense }
+  }
+
   const result = await validateLicenseJWT(key)
   if (!result.valid || !result.license) {
     return result
@@ -80,11 +97,12 @@ export async function validateAndStoreLicense(
   return result
 }
 
-export function getLicense(): LicensePayload | null {
-  return cachedLicense
-}
-
 export async function loadLicenseFromDB(): Promise<LicensePayload | null> {
+  if (process.env.CHYTR_DEV_MODE === 'true') {
+    cachedLicense = devModeLicense()
+    return cachedLicense
+  }
+
   if (cachedLicense) return cachedLicense
 
   try {
@@ -105,7 +123,13 @@ export async function loadLicenseFromDB(): Promise<LicensePayload | null> {
   return null
 }
 
+export function getLicense(): LicensePayload | null {
+  if (process.env.CHYTR_DEV_MODE === 'true') return devModeLicense()
+  return cachedLicense
+}
+
 export function isFeatureEnabled(feature: string): boolean {
+  if (process.env.CHYTR_DEV_MODE === 'true') return true
   if (!cachedLicense) return false
   return cachedLicense.features.includes(feature)
 }
