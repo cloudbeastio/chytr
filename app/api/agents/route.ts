@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createSupabaseServiceClient } from '@/lib/supabase'
+import { getSessionUserId } from '@/lib/session'
 
 export async function POST(req: NextRequest) {
   try {
+    const userId = await getSessionUserId()
+    if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
     const body = (await req.json()) as {
       name?: string
       description?: string | null
@@ -25,6 +29,7 @@ export async function POST(req: NextRequest) {
         type: body.type ?? 'cursor',
         notification_config: (body.notification_config ?? {}) as import('@/lib/database.types').Json,
         status: 'offline',
+        user_id: userId,
       })
       .select()
       .single()

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createSupabaseServiceClient } from '@/lib/supabase'
+import { getSessionUserId } from '@/lib/session'
 
 export async function PATCH(
   req: NextRequest,
@@ -21,6 +22,9 @@ export async function PATCH(
     if (Object.keys(updates).length === 0) {
       return NextResponse.json({ error: 'No valid fields to update' }, { status: 400 })
     }
+
+    const userId = await getSessionUserId()
+    if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const supabase = createSupabaseServiceClient()
     const { data, error } = await supabase
@@ -48,6 +52,9 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params
+    const userId = await getSessionUserId()
+    if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
     const supabase = createSupabaseServiceClient()
     const { error } = await supabase.from('scheduled_jobs').delete().eq('id', id)
 

@@ -1,4 +1,4 @@
-import { createSupabaseServiceClient } from '@/lib/supabase'
+import { createSupabaseServerClient } from '@/lib/supabase'
 import { Suspense } from 'react'
 import Link from 'next/link'
 import { Badge } from '@/components/ui/badge'
@@ -93,7 +93,7 @@ async function WorkOrderTable({
   status: string | undefined
   source: string | undefined
 }) {
-  const supabase = createSupabaseServiceClient()
+  const supabase = await createSupabaseServerClient()
 
   let query = supabase
     .from('work_orders')

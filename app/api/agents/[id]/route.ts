@@ -1,11 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createSupabaseServiceClient } from '@/lib/supabase'
+import { getSessionUserId } from '@/lib/session'
 
 export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const userId = await getSessionUserId()
+    if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
     const { id } = await params
     const body = (await req.json()) as {
       name?: string
@@ -25,6 +29,7 @@ export async function PATCH(
       .from('agents')
       .update(update)
       .eq('id', id)
+      .eq('user_id', userId)
       .select()
       .single()
 
