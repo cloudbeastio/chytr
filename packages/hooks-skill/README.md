@@ -22,8 +22,8 @@ This copies `.cursor/hooks.json` and the three hook scripts into your repo's `.c
 
 | Variable | Required | Description |
 |---|---|---|
-| `CHYTR_URL` | Yes | Your Supabase project URL (e.g. `https://xyz.supabase.co`) |
-| `CHYTR_SERVICE_KEY` | Yes | Supabase service role key — used to authenticate hook POSTs |
+| `CHYTR_URL` | Yes | Your chytr instance URL (e.g. `https://app.chytr.ai` or `http://localhost:3000`) |
+| `CHYTR_API_KEY` | Yes | chytr API key — authenticates hook POSTs |
 | `WORK_ORDER_ID` | Recommended | ID of the active work order — scopes all events to a task |
 | `CHYTR_AGENT_ID` | Optional | Agent identifier — useful when running multiple agents |
 
@@ -34,8 +34,8 @@ Set them in your shell, `.env`, or inject via `.cursor/mcp.json`:
   "mcpServers": {
     "your-server": {
       "env": {
-        "CHYTR_URL": "https://xyz.supabase.co",
-        "CHYTR_SERVICE_KEY": "your-service-key",
+        "CHYTR_URL": "https://app.chytr.ai",
+        "CHYTR_API_KEY": "your-api-key",
         "WORK_ORDER_ID": "wo_abc123"
       }
     }
@@ -43,13 +43,13 @@ Set them in your shell, `.env`, or inject via `.cursor/mcp.json`:
 }
 ```
 
-If `CHYTR_URL` or `CHYTR_SERVICE_KEY` are not set, all hooks exit silently — no errors, no noise.
+If `CHYTR_URL` or `CHYTR_API_KEY` are not set, all hooks exit silently — no errors, no noise.
 
 ## How work order IDs work
 
-Set `WORK_ORDER_ID` before starting a session to tie every log event to a specific task. On `SessionStart`, the hooks skill queries `GET /functions/v1/query-knowledge?work_order_id=<id>` and injects any returned knowledge as `additional_context` into the agent session — so the agent picks up where the last run left off.
+Set `WORK_ORDER_ID` before starting a session to tie every log event to a specific task. On `SessionStart`, the hooks skill queries `GET /api/v1/knowledge?work_order_id=<id>` and injects any returned knowledge as `additional_context` into the agent session — so the agent picks up where the last run left off.
 
-On `Stop`, the `ingest-log` endpoint can return a `followup_message` field which gets surfaced back to the agent as a continuation prompt — enabling automatic work order validation and loop-back if the definition of done isn't met.
+On `Stop`, the ingest endpoint can return a `followup_message` field which gets surfaced back to the agent as a continuation prompt — enabling automatic work order validation and loop-back if the definition of done isn't met.
 
 ## Tracked events
 
@@ -69,7 +69,7 @@ On `Stop`, the `ingest-log` endpoint can return a `followup_message` field which
 
 ## Payload structure
 
-Every event POSTs to `POST /functions/v1/ingest-log`:
+Every event POSTs to `POST /api/v1/ingest`:
 
 ```json
 {

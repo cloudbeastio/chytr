@@ -16,7 +16,12 @@ export async function getLicense() {
     .eq('key', 'license_decoded')
     .single()
   if (!data?.value) return null
-  return JSON.parse(data.value)
+  try {
+    return JSON.parse(data.value)
+  } catch {
+    console.error('getLicense: failed to parse license_decoded')
+    return null
+  }
 }
 
 export function isFeatureEnabled(license: Record<string, unknown> | null, feature: string): boolean {

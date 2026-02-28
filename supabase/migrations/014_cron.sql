@@ -29,13 +29,13 @@ select cron.schedule('expire-approvals', '0 * * * *', $$
     and expires_at < now();
 $$);
 
--- Run due scheduled jobs
+-- Run due scheduled jobs via Next.js API
 select cron.schedule('run-scheduled-jobs', '* * * * *', $$
   select net.http_post(
-    url := current_setting('app.supabase_url') || '/functions/v1/run-scheduled-job',
+    url := current_setting('app.chytr_url') || '/api/v1/jobs/cron',
     body := json_build_object('job_id', id)::jsonb,
     headers := json_build_object(
-      'Authorization', 'Bearer ' || current_setting('app.service_role_key'),
+      'Authorization', 'Bearer ' || current_setting('app.chytr_api_key'),
       'Content-Type', 'application/json'
     )::jsonb
   )
