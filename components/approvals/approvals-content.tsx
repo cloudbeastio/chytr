@@ -21,8 +21,7 @@ const HISTORY_BADGE: Record<
   Exclude<ApprovalStatus, 'pending'>,
   { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }
 > = {
-  approved: { label: 'Approved', variant: 'outline' },
-  rejected: { label: 'Rejected', variant: 'destructive' },
+  resolved: { label: 'Resolved', variant: 'outline' },
   expired: { label: 'Expired', variant: 'secondary' },
 }
 

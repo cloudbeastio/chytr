@@ -3,14 +3,14 @@ import { createSupabaseServiceClient } from './supabase'
 
 const CHYTR_API_KEY = process.env.CHYTR_API_KEY ?? ''
 
-let cachedDbKey: string | null = null
+let cachedDbKey = ''
 let cacheTs = 0
 const CACHE_TTL_MS = 60_000
 
 async function getApiKey(): Promise<string> {
   if (CHYTR_API_KEY) return CHYTR_API_KEY
 
-  if (cachedDbKey && Date.now() - cacheTs < CACHE_TTL_MS) return cachedDbKey
+  if (cachedDbKey && Date.now() - cacheTs < CACHE_TTL_MS) return cachedDbKey as string
 
   try {
     const supabase = createSupabaseServiceClient()

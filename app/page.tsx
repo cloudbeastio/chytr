@@ -2,6 +2,8 @@ import { redirect } from 'next/navigation'
 import { createSupabaseServerClient } from '@/lib/supabase'
 import { loadLicenseFromDB } from '@/lib/license'
 
+export const dynamic = 'force-dynamic'
+
 export default async function RootPage() {
   // Dev mode: skip auth + license checks
   if (process.env.CHYTR_DEV_MODE === 'true') {
