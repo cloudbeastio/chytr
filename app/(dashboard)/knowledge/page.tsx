@@ -1,5 +1,5 @@
 import { Suspense } from 'react'
-import { createSupabaseServiceClient } from '@/lib/supabase'
+import { createSupabaseServerClient } from '@/lib/supabase'
 import { loadLicenseFromDB } from '@/lib/license'
 import { Skeleton } from '@/components/ui/skeleton'
 import { KnowledgeBrowser } from '@/components/knowledge/knowledge-browser'
@@ -8,7 +8,7 @@ import type { Knowledge } from '@/lib/database.types'
 const INITIAL_FETCH_LIMIT = 200
 
 async function fetchKnowledgeData() {
-  const supabase = createSupabaseServiceClient()
+  const supabase = await createSupabaseServerClient()
 
   const [{ data: entries, count }, license] = await Promise.all([
     supabase
@@ -20,12 +20,13 @@ async function fetchKnowledgeData() {
     loadLicenseFromDB(),
   ])
 
+  const typedEntries = (entries ?? []) as Knowledge[]
   const agentTypes = Array.from(
-    new Set((entries ?? []).map((e) => e.agent_type).filter(Boolean) as string[])
+    new Set(typedEntries.map((e) => e.agent_type).filter(Boolean) as string[])
   ).sort()
 
   return {
-    entries: (entries ?? []) as Knowledge[],
+    entries: typedEntries,
     totalCount: count ?? 0,
     agentTypes,
     knowledgeLimit: license?.limits.knowledge_entries ?? 500,

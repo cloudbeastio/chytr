@@ -1,4 +1,4 @@
-import { createSupabaseServiceClient } from '@/lib/supabase'
+import { createSupabaseServerClient } from '@/lib/supabase'
 import { notFound } from 'next/navigation'
 import type { JobRun, ScheduledJob } from '@/lib/database.types'
 import { Badge } from '@/components/ui/badge'
@@ -49,7 +49,7 @@ interface PageProps {
 
 export default async function JobDetailPage({ params }: PageProps) {
   const { id } = await params
-  const supabase = createSupabaseServiceClient()
+  const supabase = await createSupabaseServerClient()
 
   const { data: rawJob } = await supabase
     .from('scheduled_jobs')

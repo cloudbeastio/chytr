@@ -1,4 +1,4 @@
-import { createSupabaseServiceClient } from '@/lib/supabase'
+import { createSupabaseServerClient } from '@/lib/supabase'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { Badge } from '@/components/ui/badge'
@@ -119,7 +119,7 @@ interface PageProps {
 
 export default async function WorkOrderDetailPage({ params }: PageProps) {
   const { id } = await params
-  const supabase = createSupabaseServiceClient()
+  const supabase = await createSupabaseServerClient()
 
   const { data: woData, error } = await supabase
     .from('work_orders')
