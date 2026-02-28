@@ -21,6 +21,11 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next()
   }
 
+  // /api/v1/* routes use API key auth (checked per-route), skip session auth
+  if (pathname.startsWith('/api/v1/')) {
+    return NextResponse.next()
+  }
+
   let response = NextResponse.next({
     request: { headers: request.headers },
   })
