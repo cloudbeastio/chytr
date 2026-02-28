@@ -48,18 +48,6 @@ services:
       GOTRUE_JWT_EXP: 3600
       GOTRUE_JWT_SECRET: super-secret-jwt-token-with-at-least-32-characters
       GOTRUE_MAILER_AUTOCONFIRM: "true"
-      GOTRUE_EXTERNAL_EMAIL_ENABLED: "true"
-      GOTRUE_MAILER_SECURE_EMAIL_CHANGE_ENABLED: "true"
-      GOTRUE_SMTP_HOST: ${SMTP_HOST:-}
-      GOTRUE_SMTP_PORT: ${SMTP_PORT:-587}
-      GOTRUE_SMTP_USER: ${SMTP_USER:-}
-      GOTRUE_SMTP_PASS: ${SMTP_PASS:-}
-      GOTRUE_SMTP_ADMIN_EMAIL: ${SMTP_ADMIN_EMAIL:-noreply@example.com}
-      GOTRUE_SMTP_SENDER_NAME: ${SMTP_SENDER_NAME:-chytr}
-      GOTRUE_MAILER_URLPATHS_CONFIRMATION: "/auth/callback"
-      GOTRUE_MAILER_URLPATHS_INVITE: "/auth/callback"
-      GOTRUE_MAILER_URLPATHS_RECOVERY: "/auth/callback"
-      GOTRUE_MAILER_URLPATHS_EMAIL_CHANGE: "/auth/callback"
 
   rest:
     container_name: supabase-rest
