@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createSupabaseServiceClient } from '@/lib/supabase-server'
+import { createSupabaseServiceClient } from '@/lib/supabase'
 import { authenticateApiKey } from '@/lib/api-auth'
 import { normalizePayload, checkDefinitionOfDone } from '@/lib/ingest-helpers'
 

@@ -1,6 +1,6 @@
 import { createHash } from 'crypto'
 import { NextRequest } from 'next/server'
-import { createSupabaseServiceClient } from '@/lib/supabase-service'
+import { createSupabaseServiceClient } from '@/lib/supabase'
 
 const PREFIX = 'chk_'
 

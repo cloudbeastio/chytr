@@ -6,11 +6,13 @@ CHYTR_API_KEY="${CHYTR_API_KEY:-}"
 WORK_ORDER_ID="${WORK_ORDER_ID:-}"
 CHYTR_AGENT_ID="${CHYTR_AGENT_ID:-}"
 
-# Log the session start
-if [ -n "$CHYTR_URL" ] && [ -n "$CHYTR_API_KEY" ]; then
-  RAW_PAYLOAD=$(cat)
+if [ -z "$CHYTR_URL" ] || [ -z "$CHYTR_API_KEY" ]; then
+  exit 0
+fi
 
-  BODY=$(cat <<EOF
+RAW_PAYLOAD=$(cat)
+
+BODY=$(cat <<EOF
 {
   "event_type": "session_start",
   "work_order_id": $([ -n "$WORK_ORDER_ID" ] && echo "\"$WORK_ORDER_ID\"" || echo "null"),
@@ -18,35 +20,32 @@ if [ -n "$CHYTR_URL" ] && [ -n "$CHYTR_API_KEY" ]; then
   "raw_payload": $RAW_PAYLOAD
 }
 EOF
-  )
+)
 
-  curl -sf --max-time 5 -X POST \
+curl -sf --max-time 5 -X POST \
+  -H "Authorization: Bearer $CHYTR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d "$BODY" \
+  "$CHYTR_URL/api/v1/ingest" > /dev/null 2>&1 || true
+
+KNOWLEDGE=""
+if [ -n "$WORK_ORDER_ID" ]; then
+  RESP=$(curl -sf --max-time 5 \
     -H "Authorization: Bearer $CHYTR_API_KEY" \
-    -H "Content-Type: application/json" \
-    -d "$BODY" \
-    "$CHYTR_URL/api/v1/ingest" > /dev/null 2>&1 || true
-
-  # Query knowledge for context injection
-  KNOWLEDGE=""
-  if [ -n "$WORK_ORDER_ID" ]; then
-    RESP=$(curl -sf --max-time 5 \
-      -H "Authorization: Bearer $CHYTR_API_KEY" \
-      "$CHYTR_URL/api/v1/knowledge/query?work_order_id=$WORK_ORDER_ID" 2>/dev/null || echo "{}")
-    if command -v jq >/dev/null 2>&1; then
-      KNOWLEDGE=$(echo "$RESP" | jq -r '.formatted // ""')
-    else
-      KNOWLEDGE=$(echo "$RESP" | grep -o '"formatted":"[^"]*"' | sed 's/"formatted":"//;s/"$//' | sed 's/\\n/\n/g' || echo "")
-    fi
+    "$CHYTR_URL/api/v1/knowledge/query?work_order_id=$WORK_ORDER_ID" 2>/dev/null || echo "{}")
+  if command -v jq >/dev/null 2>&1; then
+    KNOWLEDGE=$(echo "$RESP" | jq -r '.formatted // ""')
+  else
+    KNOWLEDGE=$(echo "$RESP" | grep -o '"formatted":"[^"]*"' | sed 's/"formatted":"//;s/"$//' | sed 's/\\n/\n/g' || echo "")
   fi
+fi
 
-  # Output additional_context if we got knowledge
-  if [ -n "$KNOWLEDGE" ]; then
-    cat <<EOF
+if [ -n "$KNOWLEDGE" ]; then
+  cat <<EOF
 {
   "additional_context": "Relevant knowledge from past agent runs:\n$KNOWLEDGE"
 }
 EOF
-  fi
 fi
 
 exit 0

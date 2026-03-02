@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createSupabaseServiceClient } from '@/lib/supabase-server'
+import { createSupabaseServiceClient } from '@/lib/supabase'
 import { authenticateApiKey } from '@/lib/api-auth'
 
 const ALLOWED_FIELDS = [
@@ -11,6 +11,33 @@ const ALLOWED_FIELDS = [
   'description',
   'enabled',
 ]
+
+export async function GET(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const auth = await authenticateApiKey(req)
+    if (!auth) {
+      return NextResponse.json({ error: 'Invalid or missing API key' }, { status: 401 })
+    }
+
+    const { id } = await params
+    const supabase = createSupabaseServiceClient()
+    const { data, error } = await supabase
+      .from('scheduled_jobs')
+      .select('*')
+      .eq('id', id)
+      .eq('user_id', auth.userId)
+      .single()
+
+    if (error || !data) return NextResponse.json({ error: 'Job not found' }, { status: 404 })
+    return NextResponse.json({ job: data })
+  } catch (err) {
+    console.error('[v1/jobs GET/:id] error', err)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+}
 
 export async function PATCH(
   req: NextRequest,

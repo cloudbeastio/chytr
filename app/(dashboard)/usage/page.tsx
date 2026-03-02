@@ -1,4 +1,4 @@
-import { createSupabaseServiceClient } from '@/lib/supabase-server'
+import { createSupabaseServerClient } from '@/lib/supabase'
 import { loadLicenseFromDB } from '@/lib/license-server'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -26,7 +26,7 @@ const ALL_KNOWN_FEATURES = [
 ] as const
 
 async function fetchUsageData() {
-  const supabase = createSupabaseServiceClient()
+  const supabase = await createSupabaseServerClient()
 
   const [{ count: knowledgeCount }, license] = await Promise.all([
     supabase.from('knowledge').select('*', { count: 'exact', head: true }),

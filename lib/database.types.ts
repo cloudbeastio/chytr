@@ -20,11 +20,18 @@ export type LogEventType =
 export type AgentStatus = 'active' | 'idle' | 'offline' | 'error'
 export type WorkOrderStatus = 'pending' | 'running' | 'completed' | 'failed' | 'cancelled'
 export type WorkOrderSource = 'cloud' | 'local' | 'job'
-export type ApprovalStatus = 'pending' | 'approved' | 'rejected' | 'expired'
+export type ApprovalStatus = 'pending' | 'resolved' | 'expired'
 export type JobRunStatus = 'pending' | 'running' | 'completed' | 'failed'
+
+export interface Profile {
+  id: string
+  email: string
+  created_at: string
+}
 
 export interface WorkOrder {
   id: string
+  user_id: string | null
   agent_id: string | null
   repo_id: string | null
   source: WorkOrderSource
@@ -58,6 +65,7 @@ export interface WorkOrder {
 
 export interface Agent {
   id: string
+  user_id: string | null
   name: string
   description: string | null
   system_prompt: string | null
@@ -181,6 +189,7 @@ export interface SkillStatRow {
 export interface Database {
   public: {
     Tables: {
+      profiles: { Row: Profile; Insert: Partial<Profile>; Update: Partial<Profile> }
       work_orders: { Row: WorkOrder; Insert: Partial<WorkOrder>; Update: Partial<WorkOrder> }
       agents: { Row: Agent; Insert: Partial<Agent>; Update: Partial<Agent> }
       agent_repos: { Row: AgentRepo; Insert: Partial<AgentRepo>; Update: Partial<AgentRepo> }
@@ -197,8 +206,24 @@ export interface Database {
       skill_stats: { Row: SkillStatRow }
     }
     Functions: {
-      get_work_order: { Args: { p_work_order_id: string }; Returns: WorkOrder & { repo_url: string } }
-      match_knowledge: { Args: { query_embedding: number[]; match_threshold: number; match_count: number; p_agent_type?: string }; Returns: Knowledge[] }
+      get_work_order: {
+        Args: { p_work_order_id: string }
+        Returns: WorkOrder & {
+          repo_url: string
+          default_branch: string
+          agent_name: string | null
+          system_prompt: string | null
+          default_config: Json | null
+        }
+      }
+      match_knowledge: {
+        Args: { query_embedding: number[]; match_threshold: number; match_count: number; p_agent_type?: string }
+        Returns: Array<{ id: string; learning: string; frequency: number; last_seen_at: string; similarity: number }>
+      }
+      upsert_knowledge: {
+        Args: { p_learning: string; p_embedding: number[]; p_work_order_id?: string; p_agent_type?: string; p_similarity_threshold?: number }
+        Returns: string
+      }
     }
     Enums: Record<string, never>
     CompositeTypes: Record<string, never>
