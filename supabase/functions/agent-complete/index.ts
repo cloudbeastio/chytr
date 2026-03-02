@@ -45,9 +45,14 @@ serve(async (req) => {
 
     const { data: wo } = await supabase
       .from('work_orders')
-      .select('source, metadata')
+      .select('source, metadata, agent_id, objective')
       .eq('id', work_order_id)
       .single()
+
+    const effectiveStatus = status ?? 'completed'
+    if (effectiveStatus !== 'failed' && summary) {
+      extractKnowledge(supabase, work_order_id, summary, wo?.agent_id).catch(() => {})
+    }
 
     if (wo?.source === 'job' && wo.metadata) {
       const meta = wo.metadata as Record<string, unknown>
@@ -80,5 +85,29 @@ async function fetchCursorAgentData(apiKey: string, agentId: string) {
     return await res.json()
   } catch {
     return null
+  }
+}
+
+async function extractKnowledge(
+  supabase: Awaited<ReturnType<typeof getServiceClient>>,
+  workOrderId: string,
+  summary: string,
+  agentId: string | null | undefined
+) {
+  try {
+    let agentType: string | null = null
+    if (agentId) {
+      const { data: agent } = await supabase
+        .from('agents')
+        .select('name')
+        .eq('id', agentId)
+        .single()
+      if (agent?.name) agentType = agent.name
+    }
+    await supabase.functions.invoke('embed', {
+      body: { text: summary, work_order_id: workOrderId, agent_type: agentType },
+    })
+  } catch (e) {
+    console.error('extractKnowledge error:', e)
   }
 }

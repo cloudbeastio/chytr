@@ -1,5 +1,5 @@
-import { createSupabaseServiceClient } from '@/lib/supabase'
-import { loadLicenseFromDB } from '@/lib/license'
+import { createSupabaseServiceClient } from '@/lib/supabase-server'
+import { loadLicenseFromDB } from '@/lib/license-server'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'

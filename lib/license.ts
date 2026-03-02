@@ -1,5 +1,4 @@
 import { jwtVerify, importSPKI } from 'jose'
-import { createSupabaseServiceClient } from './supabase'
 
 export interface LicensePayload {
   sub: string
@@ -27,7 +26,11 @@ UPFtJ7lXkGtHPp4f0p4AAQIDAQAB
 
 let cachedLicense: LicensePayload | null = null
 
-function devModeLicense(): LicensePayload {
+export function setCachedLicense(payload: LicensePayload | null) {
+  cachedLicense = payload
+}
+
+export function devModeLicense(): LicensePayload {
   return {
     sub: 'dev',
     email: 'dev@localhost',
@@ -73,56 +76,6 @@ export async function validateLicenseJWT(
   }
 }
 
-export async function validateAndStoreLicense(
-  key: string
-): Promise<{ valid: boolean; license?: LicensePayload; error?: string }> {
-  if (process.env.CHYTR_DEV_MODE === 'true') {
-    cachedLicense = devModeLicense()
-    return { valid: true, license: cachedLicense }
-  }
-
-  const result = await validateLicenseJWT(key)
-  if (!result.valid || !result.license) {
-    return result
-  }
-
-  const supabase = createSupabaseServiceClient()
-  await supabase.from('instance_config').upsert([
-    { key: 'license_key', value: key },
-    { key: 'license_decoded', value: JSON.stringify(result.license) },
-    { key: 'activated_at', value: new Date().toISOString() },
-  ])
-
-  cachedLicense = result.license
-  return result
-}
-
-export async function loadLicenseFromDB(): Promise<LicensePayload | null> {
-  if (process.env.CHYTR_DEV_MODE === 'true') {
-    cachedLicense = devModeLicense()
-    return cachedLicense
-  }
-
-  if (cachedLicense) return cachedLicense
-
-  try {
-    const supabase = createSupabaseServiceClient()
-    const { data } = await supabase
-      .from('instance_config')
-      .select('value')
-      .eq('key', 'license_decoded')
-      .single()
-
-    if (data?.value) {
-      cachedLicense = JSON.parse(data.value) as LicensePayload
-      return cachedLicense
-    }
-  } catch {
-    // DB not ready yet
-  }
-  return null
-}
-
 export function getLicense(): LicensePayload | null {
   if (process.env.CHYTR_DEV_MODE === 'true') return devModeLicense()
   return cachedLicense
@@ -144,26 +97,26 @@ export function getTier(): 'free' | 'pro' | 'team' | null {
 }
 
 export const TIER_FEATURES = {
-  free: ['logging', 'dashboard', 'work_orders', 'agents', 'knowledge'],
+  free: ['logging', 'dashboard', 'work_orders', 'agents', 'analytics'],
   pro: [
     'logging',
     'dashboard',
     'work_orders',
     'agents',
-    'knowledge',
+    'analytics',
     'scheduled_jobs',
     'approvals',
-    'analytics',
+    'knowledge',
   ],
   team: [
     'logging',
     'dashboard',
     'work_orders',
     'agents',
-    'knowledge',
+    'analytics',
     'scheduled_jobs',
     'approvals',
-    'analytics',
+    'knowledge',
     'multi_user',
   ],
 } as const

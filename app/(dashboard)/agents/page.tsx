@@ -1,5 +1,5 @@
 import { Suspense } from 'react'
-import { createSupabaseServiceClient } from '@/lib/supabase'
+import { createSupabaseServiceClient } from '@/lib/supabase-server'
 import { Skeleton } from '@/components/ui/skeleton'
 import { AgentsRegistry } from '@/components/agents/agents-registry'
 import type { Agent } from '@/lib/database.types'

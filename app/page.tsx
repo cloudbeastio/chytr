@@ -1,26 +1,21 @@
-import { redirect } from 'next/navigation'
-import { createSupabaseServerClient } from '@/lib/supabase'
-import { loadLicenseFromDB } from '@/lib/license'
+import { Navbar } from '@/components/landing/navbar'
+import { Hero } from '@/components/landing/hero'
+import { HowItWorks } from '@/components/landing/how-it-works'
+import { Features } from '@/components/landing/features'
+import { Pricing } from '@/components/landing/pricing'
+import { Footer } from '@/components/landing/footer'
 
-export default async function RootPage() {
-  // Dev mode: skip auth + license checks
-  if (process.env.CHYTR_DEV_MODE === 'true') {
-    redirect('/dashboard')
-  }
-
-  const supabase = await createSupabaseServerClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) {
-    redirect('/login')
-  }
-
-  const license = await loadLicenseFromDB()
-  if (!license && process.env.CHYTR_MODE === 'self-hosted') {
-    redirect('/activate')
-  }
-
-  redirect('/dashboard')
+export default function RootPage() {
+  return (
+    <>
+      <Navbar />
+      <main className="pt-14">
+        <Hero />
+        <HowItWorks />
+        <Features />
+        <Pricing />
+        <Footer />
+      </main>
+    </>
+  )
 }

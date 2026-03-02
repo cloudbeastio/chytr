@@ -1,7 +1,7 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
-const PUBLIC_PATHS = ['/login', '/auth/callback', '/activate']
+const PUBLIC_PATHS = ['/login', '/auth/callback', '/auth/confirm', '/activate', '/api/license/refresh', '/api/webhooks']
 
 export async function middleware(request: NextRequest) {
   // Dev mode: skip auth entirely
@@ -15,6 +15,7 @@ export async function middleware(request: NextRequest) {
   if (PUBLIC_PATHS.some((p) => pathname.startsWith(p))) {
     return NextResponse.next()
   }
+  if (pathname === '/') return NextResponse.next()
 
   // Allow Next.js internals
   if (pathname.startsWith('/_next') || pathname.startsWith('/api/auth')) {

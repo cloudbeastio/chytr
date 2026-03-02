@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { validateAndStoreLicense } from '@/lib/license'
+import { validateAndStoreLicense } from '@/lib/license-server'
 
 export async function POST(req: NextRequest) {
   try {

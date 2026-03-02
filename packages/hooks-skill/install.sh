@@ -2,11 +2,14 @@
 set -euo pipefail
 
 REPO="https://raw.githubusercontent.com/cloudbeastio/chytr/main"
+
+TARGET_DIR="${1:-.}"
+cd "$TARGET_DIR" || { echo "Error: cannot cd to $TARGET_DIR"; exit 1; }
+
 INSTALL_DIR=".cursor"
 
-echo "Installing chytr hooks skill..."
+echo "Installing chytr hooks skill into $(pwd)/.cursor/ ..."
 
-# Create directories
 mkdir -p "$INSTALL_DIR/hooks"
 
 # Download hooks.json
@@ -25,8 +28,8 @@ echo "chytr hooks installed successfully!"
 echo ""
 echo "To connect to your chytr instance, set these env vars in your shell or .env:"
 echo ""
-echo "  export CHYTR_URL=<your-supabase-url>"
-echo "  export CHYTR_SERVICE_KEY=<your-supabase-service-key>"
+echo "  export CHYTR_URL=<your-app-url>   # e.g. https://app.chytr.ai"
+echo "  export CHYTR_API_KEY=<your-api-key>   # from Settings -> API Keys"
 echo "  export WORK_ORDER_ID=<work-order-id>  # set per session"
 echo ""
 echo "Or add them to your .cursor/mcp.json environment for automatic injection."

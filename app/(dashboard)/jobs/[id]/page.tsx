@@ -1,4 +1,4 @@
-import { createSupabaseServiceClient } from '@/lib/supabase'
+import { createSupabaseServiceClient } from '@/lib/supabase-server'
 import { notFound } from 'next/navigation'
 import type { JobRun, ScheduledJob } from '@/lib/database.types'
 import { Badge } from '@/components/ui/badge'

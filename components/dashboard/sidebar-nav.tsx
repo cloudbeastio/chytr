@@ -12,6 +12,7 @@ import {
   Settings,
   Lock,
   BarChart2,
+  Key,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
@@ -29,8 +30,9 @@ const NAV_ITEMS: NavItem[] = [
   { href: '/agents', label: 'Agents', icon: Bot },
   { href: '/jobs', label: 'Jobs', icon: Calendar, proGated: true },
   { href: '/approvals', label: 'Approvals', icon: CheckCircle, proGated: true },
-  { href: '/knowledge', label: 'Knowledge', icon: Brain },
+  { href: '/knowledge', label: 'Knowledge', icon: Brain, proGated: true },
   { href: '/usage', label: 'Usage', icon: BarChart2 },
+  { href: '/api-keys', label: 'API Keys', icon: Key },
   { href: '/settings', label: 'Settings', icon: Settings },
 ]
 

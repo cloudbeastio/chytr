@@ -11,7 +11,7 @@ serve(async (req) => {
   }
 
   try {
-    const { text, work_order_id, agent_type } = await req.json()
+    const { text, work_order_id, agent_type, user_id } = await req.json()
     if (!text) {
       return new Response(JSON.stringify({ error: 'text required' }), {
         status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -21,10 +21,11 @@ serve(async (req) => {
     const supabase = getServiceClient()
     const license = await getLicense()
 
-    if (license?.limits?.knowledge_entries) {
+    if (license?.limits?.knowledge_entries && user_id) {
       const { count } = await supabase
         .from('knowledge')
         .select('*', { count: 'exact', head: true })
+        .eq('user_id', user_id)
 
       if ((count ?? 0) >= license.limits.knowledge_entries) {
         return new Response(
@@ -42,6 +43,7 @@ serve(async (req) => {
       p_embedding: embedding,
       p_work_order_id: work_order_id ?? null,
       p_agent_type: agent_type ?? null,
+      p_user_id: user_id ?? null,
     })
 
     if (error) throw error

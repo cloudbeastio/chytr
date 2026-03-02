@@ -2,8 +2,8 @@ import { Separator } from '@/components/ui/separator'
 import { Badge } from '@/components/ui/badge'
 import { SidebarNav } from '@/components/dashboard/sidebar-nav'
 import { UserMenu } from '@/components/dashboard/user-menu'
-import { loadLicenseFromDB } from '@/lib/license'
-import { createSupabaseServerClient } from '@/lib/supabase'
+import { loadLicenseFromDB } from '@/lib/license-server'
+import { createSupabaseServerClient } from '@/lib/supabase-server'
 import { Activity } from 'lucide-react'
 
 const TIER_BADGE: Record<string, { label: string; variant: 'default' | 'secondary' | 'outline' }> =

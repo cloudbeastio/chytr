@@ -1,8 +1,9 @@
 import { Suspense } from 'react'
-import { createSupabaseServiceClient } from '@/lib/supabase'
-import { loadLicenseFromDB } from '@/lib/license'
+import { createSupabaseServiceClient } from '@/lib/supabase-server'
+import { loadLicenseFromDB } from '@/lib/license-server'
 import { Skeleton } from '@/components/ui/skeleton'
 import { KnowledgeBrowser } from '@/components/knowledge/knowledge-browser'
+import { FeatureGate } from '@/components/license/feature-gate'
 import type { Knowledge } from '@/lib/database.types'
 
 const INITIAL_FETCH_LIMIT = 200
@@ -74,7 +75,26 @@ async function KnowledgeContent() {
   )
 }
 
-export default function KnowledgePage() {
+export default async function KnowledgePage() {
+  const license = await loadLicenseFromDB()
+  const hasKnowledge = license?.features.includes('knowledge') ?? false
+
+  if (!hasKnowledge) {
+    return (
+      <div className="space-y-6 max-w-4xl">
+        <div>
+          <h1 className="text-xl font-semibold tracking-tight">Knowledge</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            Learnings extracted from agent work orders
+          </p>
+        </div>
+        <FeatureGate feature="knowledge" requiredTier="pro">
+          <div />
+        </FeatureGate>
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-6 max-w-4xl">
       <div>

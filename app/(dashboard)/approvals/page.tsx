@@ -1,4 +1,4 @@
-import { createSupabaseServiceClient } from '@/lib/supabase'
+import { createSupabaseServiceClient } from '@/lib/supabase-server'
 import { FeatureGate } from '@/components/license/feature-gate'
 import { ApprovalsContent } from '@/components/approvals/approvals-content'
 import { Skeleton } from '@/components/ui/skeleton'
