@@ -20,7 +20,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
-import { RefreshCw, CheckCircle, XCircle, AlertTriangle } from 'lucide-react'
+import { RefreshCw, CheckCircle, AlertTriangle, Key, Plus, Trash2, Copy, Check } from 'lucide-react'
 import type { LicensePayload } from '@/lib/license'
 
 interface SaveState {
@@ -52,11 +52,35 @@ function SaveFeedback({ state }: { state: SaveState }) {
 
 // ─── License Tab ─────────────────────────────────────────────────────────────
 
+interface LicenseKeyRow {
+  id: string
+  key_prefix: string
+  name: string
+  tier: string
+  created_at: string
+  revoked: boolean
+}
+
 function LicenseTab() {
   const [license, setLicense] = useState<LicensePayload | null>(null)
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [refreshError, setRefreshError] = useState<string | null>(null)
+  const [licenseKeys, setLicenseKeys] = useState<LicenseKeyRow[]>([])
+  const [keysLoading, setKeysLoading] = useState(true)
+  const [newKeyName, setNewKeyName] = useState('')
+  const [creating, setCreating] = useState(false)
+  const [createdLicenseKey, setCreatedLicenseKey] = useState<string | null>(null)
+  const [copied, setCopied] = useState(false)
+  const [revokingId, setRevokingId] = useState<string | null>(null)
+
+  const loadLicenseKeys = () => {
+    fetch('/api/license/keys')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => { if (d?.keys) setLicenseKeys(d.keys) })
+      .catch(() => {})
+      .finally(() => setKeysLoading(false))
+  }
 
   useEffect(() => {
     fetch('/api/license/info')
@@ -65,6 +89,8 @@ function LicenseTab() {
       .catch(() => {})
       .finally(() => setLoading(false))
   }, [])
+
+  useEffect(() => { loadLicenseKeys() }, [])
 
   async function handleRefresh() {
     setRefreshing(true)
@@ -87,90 +113,271 @@ function LicenseTab() {
     team: 'default',
   }
 
+  async function createLicenseKey() {
+    if (!newKeyName.trim()) return
+    setCreating(true)
+    setCreatedLicenseKey(null)
+    try {
+      const res = await fetch('/api/license/keys', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: newKeyName.trim() }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error ?? 'Failed')
+      setCreatedLicenseKey(data.license_key)
+      setNewKeyName('')
+      loadLicenseKeys()
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setCreating(false)
+    }
+  }
+
+  async function revokeLicenseKey(id: string) {
+    setRevokingId(id)
+    try {
+      await fetch(`/api/license/keys/${id}`, { method: 'DELETE' })
+      loadLicenseKeys()
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setRevokingId(null)
+    }
+  }
+
+  async function copyLicenseKey() {
+    if (!createdLicenseKey) return
+    await navigator.clipboard.writeText(createdLicenseKey)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  const activeLicenseKeys = licenseKeys.filter((k) => !k.revoked)
+  const revokedLicenseKeys = licenseKeys.filter((k) => k.revoked)
+
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-base">License</CardTitle>
-        <CardDescription>Current license information for this instance</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {loading ? (
-          <p className="text-sm text-muted-foreground">Loading…</p>
-        ) : !license ? (
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <XCircle className="h-4 w-4 text-red-400" />
-            No active license. Visit{' '}
-            <a
-              href="https://www.chytr.ai"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="underline underline-offset-2 hover:text-foreground"
-            >
-              chytr.ai
-            </a>{' '}
-            to activate.
-          </div>
-        ) : (
-          <div className="space-y-3">
-            <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
-              <div className="text-muted-foreground">Email</div>
-              <div>{license.email}</div>
-
-              <div className="text-muted-foreground">Tier</div>
-              <div>
-                <Badge variant={TIER_VARIANT[license.tier] ?? 'secondary'} className="capitalize">
-                  {license.tier}
-                </Badge>
-              </div>
-
-              <div className="text-muted-foreground">Expires</div>
-              <div>
-                {license.exp
-                  ? new Date(license.exp * 1000).toLocaleDateString()
-                  : '—'}
-              </div>
-
-              <div className="text-muted-foreground">Knowledge limit</div>
-              <div>{license.limits.knowledge_entries.toLocaleString()} entries</div>
-
-              <div className="text-muted-foreground">Log retention</div>
-              <div>{license.limits.log_retention_days} days</div>
-
-              <div className="text-muted-foreground">Agent repos</div>
-              <div>{license.limits.agent_repos}</div>
+    <div className="space-y-4">
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">License</CardTitle>
+          <CardDescription>Current license information for this instance</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {loading ? (
+            <p className="text-sm text-muted-foreground">Loading…</p>
+          ) : !license ? (
+            <div className="text-sm text-muted-foreground space-y-2">
+              <p>
+                You are currently using the hosted version of chytr.ai and agree to the{' '}
+                <a
+                  href="/terms"
+                  className="underline underline-offset-2 hover:text-foreground"
+                >
+                  licensing agreement
+                </a>
+                . If you would like to self-host Chytr for ultimate privacy, generate a Chytr
+                license key below.
+              </p>
             </div>
+          ) : (
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
+                <div className="text-muted-foreground">Email</div>
+                <div>{license.email}</div>
 
-            <Separator />
-
-            <div>
-              <p className="text-xs text-muted-foreground mb-2">Features</p>
-              <div className="flex flex-wrap gap-1.5">
-                {license.features.map((f) => (
-                  <Badge key={f} variant="secondary" className="text-[10px] px-1.5 py-0">
-                    {f}
+                <div className="text-muted-foreground">Tier</div>
+                <div>
+                  <Badge variant={TIER_VARIANT[license.tier] ?? 'secondary'} className="capitalize">
+                    {license.tier}
                   </Badge>
-                ))}
+                </div>
+
+                <div className="text-muted-foreground">Expires</div>
+                <div>
+                  {license.exp
+                    ? new Date(license.exp * 1000).toLocaleDateString()
+                    : '—'}
+                </div>
+
+                <div className="text-muted-foreground">Knowledge limit</div>
+                <div>{license.limits.knowledge_entries.toLocaleString()} entries</div>
+
+                <div className="text-muted-foreground">Log retention</div>
+                <div>{license.limits.log_retention_days} days</div>
+
+                <div className="text-muted-foreground">Agent repos</div>
+                <div>{license.limits.agent_repos}</div>
+              </div>
+
+              <Separator />
+
+              <div>
+                <p className="text-xs text-muted-foreground mb-2">Features</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {license.features.map((f) => (
+                    <Badge key={f} variant="secondary" className="text-[10px] px-1.5 py-0">
+                      {f}
+                    </Badge>
+                  ))}
+                </div>
               </div>
             </div>
-          </div>
-        )}
-
-        <div className="flex items-center gap-3 pt-2">
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={handleRefresh}
-            disabled={refreshing}
-          >
-            <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${refreshing ? 'animate-spin' : ''}`} />
-            Refresh License
-          </Button>
-          {refreshError && (
-            <span className="text-xs text-red-400">{refreshError}</span>
           )}
-        </div>
-      </CardContent>
-    </Card>
+
+          {license && (
+            <div className="flex items-center gap-3 pt-2">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleRefresh}
+                disabled={refreshing}
+              >
+                <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${refreshing ? 'animate-spin' : ''}`} />
+                Refresh License
+              </Button>
+              {refreshError && (
+                <span className="text-xs text-red-400">{refreshError}</span>
+              )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Create license key */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <Plus className="h-4 w-4" />
+            Create license key
+          </CardTitle>
+          <CardDescription>Generate a key to activate a self-hosted instance. Give it a name to identify it later.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-end gap-2">
+            <div className="space-y-1.5 flex-1">
+              <Label htmlFor="license-key-name">Key name</Label>
+              <Input
+                id="license-key-name"
+                placeholder="e.g. Production, Staging"
+                value={newKeyName}
+                onChange={(e) => setNewKeyName(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') createLicenseKey() }}
+              />
+            </div>
+            <Button onClick={createLicenseKey} disabled={creating || !newKeyName.trim()}>
+              {creating ? 'Generating…' : 'Generate'}
+            </Button>
+          </div>
+
+          {createdLicenseKey && (
+            <div className="rounded-lg border border-green-800/40 bg-green-950/20 p-4 space-y-2">
+              <p className="text-xs text-green-400 font-medium">
+                Copy this key now — it will not be shown again.
+              </p>
+              <div className="flex items-center gap-2">
+                <code className="flex-1 text-sm font-mono bg-muted rounded px-3 py-2 break-all">
+                  {createdLicenseKey}
+                </code>
+                <Button size="icon" variant="outline" onClick={copyLicenseKey} className="shrink-0">
+                  {copied ? <Check className="h-4 w-4 text-green-400" /> : <Copy className="h-4 w-4" />}
+                </Button>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Active license keys */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <Key className="h-4 w-4" />
+            Your license keys
+            {activeLicenseKeys.length > 0 && (
+              <Badge variant="secondary" className="ml-1">{activeLicenseKeys.length}</Badge>
+            )}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {keysLoading ? (
+            <p className="text-sm text-muted-foreground">Loading…</p>
+          ) : activeLicenseKeys.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No active keys. Generate one above.</p>
+          ) : (
+            <div className="divide-y">
+              {activeLicenseKeys.map((k) => (
+                <div key={k.id} className="flex items-center gap-3 py-3">
+                  <Key className="h-4 w-4 text-muted-foreground shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium">{k.name}</p>
+                    <p className="text-xs text-muted-foreground font-mono">
+                      {k.key_prefix}••••••••••••••••••••••••••••
+                    </p>
+                  </div>
+                  <Badge variant="secondary" className="text-[10px] capitalize shrink-0">{k.tier}</Badge>
+                  <p className="text-xs text-muted-foreground shrink-0">
+                    Created {new Date(k.created_at).toLocaleDateString()}
+                  </p>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="text-destructive shrink-0"
+                        disabled={revokingId === k.id}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Revoke &quot;{k.name}&quot;?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Any self-hosted instance using this key will lose access. This cannot be undone.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                          onClick={() => revokeLicenseKey(k.id)}
+                        >
+                          Revoke key
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {revokedLicenseKeys.length > 0 && (
+        <Card className="opacity-60">
+          <CardHeader>
+            <CardTitle className="text-base text-muted-foreground">
+              Revoked keys ({revokedLicenseKeys.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="divide-y">
+              {revokedLicenseKeys.map((k) => (
+                <div key={k.id} className="flex items-center gap-3 py-2">
+                  <Key className="h-4 w-4 text-muted-foreground shrink-0" />
+                  <p className="text-sm line-through text-muted-foreground flex-1">{k.name}</p>
+                  <p className="text-xs text-muted-foreground font-mono">{k.key_prefix}…</p>
+                  <Badge variant="outline" className="text-xs shrink-0">Revoked</Badge>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+    </div>
   )
 }
 

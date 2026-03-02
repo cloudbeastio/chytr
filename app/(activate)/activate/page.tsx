@@ -66,7 +66,7 @@ export default function ActivatePage() {
                 <Input
                   id="key"
                   type="text"
-                  placeholder="chytr_xxxxxxxxxxxxxxxxxxxxxxxx"
+                  placeholder="chl_xxxxxxxxxxxxxxxxxxxxxxxx"
                   value={key}
                   onChange={(e) => setKey(e.target.value)}
                   className="font-mono text-sm"

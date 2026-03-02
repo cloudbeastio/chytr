@@ -157,6 +157,18 @@ export interface InstanceConfig {
   updated_at: string
 }
 
+export interface LicenseKey {
+  id: string
+  user_id: string
+  key_hash: string
+  key_prefix: string
+  name: string
+  tier: string
+  activated_instance_id: string | null
+  created_at: string
+  revoked_at: string | null
+}
+
 export interface AgentStatRow {
   agent_id: string
   name: string
@@ -201,6 +213,7 @@ export interface Database {
       job_runs: { Row: JobRun; Insert: Partial<JobRun>; Update: Partial<JobRun> }
       approvals: { Row: Approval; Insert: Partial<Approval>; Update: Partial<Approval> }
       instance_config: { Row: InstanceConfig; Insert: Partial<InstanceConfig>; Update: Partial<InstanceConfig> }
+      license_keys: { Row: LicenseKey; Insert: Partial<LicenseKey>; Update: Partial<LicenseKey> }
     }
     Views: {
       agent_stats: { Row: AgentStatRow }

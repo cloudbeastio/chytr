@@ -1,7 +1,7 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
-const PUBLIC_PATHS = ['/login', '/auth/callback', '/auth/confirm', '/activate', '/api/license/refresh', '/api/webhooks']
+const PUBLIC_PATHS = ['/login', '/auth/callback', '/auth/confirm', '/activate', '/terms', '/api/license/refresh', '/api/license/redeem', '/api/webhooks']
 
 export async function middleware(request: NextRequest) {
   // Dev mode: skip auth entirely
