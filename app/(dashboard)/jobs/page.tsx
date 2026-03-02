@@ -1,4 +1,4 @@
-import { createSupabaseServiceClient } from '@/lib/supabase'
+import { createSupabaseServerClient } from '@/lib/supabase'
 import { FeatureGate } from '@/components/license/feature-gate'
 import { JobsTable } from '@/components/jobs/jobs-table'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -12,7 +12,7 @@ export interface JobWithData extends ScheduledJob {
 }
 
 async function JobsContent() {
-  const supabase = createSupabaseServiceClient()
+  const supabase = await createSupabaseServerClient()
 
   const [{ data: rawJobs }, { data: rawAgents }, { data: rawRepos }] = await Promise.all([
     supabase.from('scheduled_jobs').select('*').order('created_at', { ascending: false }),

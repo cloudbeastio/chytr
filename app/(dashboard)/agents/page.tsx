@@ -1,5 +1,5 @@
 import { Suspense } from 'react'
-import { createSupabaseServiceClient } from '@/lib/supabase'
+import { createSupabaseServerClient } from '@/lib/supabase'
 import { Skeleton } from '@/components/ui/skeleton'
 import { AgentsRegistry } from '@/components/agents/agents-registry'
 import type { Agent } from '@/lib/database.types'
@@ -23,7 +23,7 @@ interface RawSkillStat {
 }
 
 async function fetchData() {
-  const supabase = createSupabaseServiceClient()
+  const supabase = await createSupabaseServerClient()
 
   const [
     { data: agents },

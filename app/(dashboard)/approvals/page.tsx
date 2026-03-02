@@ -1,4 +1,4 @@
-import { createSupabaseServiceClient } from '@/lib/supabase'
+import { createSupabaseServerClient } from '@/lib/supabase'
 import { FeatureGate } from '@/components/license/feature-gate'
 import { ApprovalsContent } from '@/components/approvals/approvals-content'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -10,7 +10,7 @@ export interface ApprovalWithMeta extends Approval {
 }
 
 async function ApprovalsData() {
-  const supabase = createSupabaseServiceClient()
+  const supabase = await createSupabaseServerClient()
 
   const [{ data: pending }, { data: history }] = await Promise.all([
     supabase

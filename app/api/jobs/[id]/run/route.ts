@@ -1,11 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createSupabaseServiceClient } from '@/lib/supabase'
+import { getSessionUserId } from '@/lib/session'
 
 export async function POST(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const userId = await getSessionUserId()
+    if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
     const { id } = await params
     const supabase = createSupabaseServiceClient()
 
@@ -31,6 +35,7 @@ export async function POST(
         lines: template.lines ?? null,
         constraints: template.constraints ?? null,
         status: 'pending',
+        user_id: userId,
       })
       .select()
       .single()

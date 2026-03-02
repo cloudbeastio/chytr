@@ -23,8 +23,15 @@ export type WorkOrderSource = 'cloud' | 'local' | 'job'
 export type ApprovalStatus = 'pending' | 'resolved' | 'expired'
 export type JobRunStatus = 'pending' | 'running' | 'completed' | 'failed'
 
+export interface Profile {
+  id: string
+  email: string
+  created_at: string
+}
+
 export interface WorkOrder {
   id: string
+  user_id: string | null
   agent_id: string | null
   repo_id: string | null
   source: WorkOrderSource
@@ -58,6 +65,7 @@ export interface WorkOrder {
 
 export interface Agent {
   id: string
+  user_id: string | null
   name: string
   description: string | null
   system_prompt: string | null
@@ -181,6 +189,7 @@ export interface SkillStatRow {
 export interface Database {
   public: {
     Tables: {
+      profiles: { Row: Profile; Insert: Partial<Profile>; Update: Partial<Profile> }
       work_orders: { Row: WorkOrder; Insert: Partial<WorkOrder>; Update: Partial<WorkOrder> }
       agents: { Row: Agent; Insert: Partial<Agent>; Update: Partial<Agent> }
       agent_repos: { Row: AgentRepo; Insert: Partial<AgentRepo>; Update: Partial<AgentRepo> }

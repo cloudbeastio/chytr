@@ -1,4 +1,4 @@
-import { createSupabaseServiceClient } from '@/lib/supabase'
+import { createSupabaseServerClient } from '@/lib/supabase'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -15,7 +15,7 @@ const STATUS_BADGE: Record<WorkOrderStatus, { label: string; variant: 'default' 
 }
 
 async function DashboardStats() {
-  const supabase = createSupabaseServiceClient()
+  const supabase = await createSupabaseServerClient()
 
   const today = new Date()
   today.setHours(0, 0, 0, 0)
@@ -100,7 +100,7 @@ function StatsSkeleton() {
 }
 
 async function RecentActivity() {
-  const supabase = createSupabaseServiceClient()
+  const supabase = await createSupabaseServerClient()
 
   const { data: rawWorkOrders } = await supabase
     .from('work_orders')

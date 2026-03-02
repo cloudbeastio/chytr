@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createSupabaseServiceClient } from '@/lib/supabase'
+import { getSessionUserId } from '@/lib/session'
 
 export async function GET() {
   try {
+    const userId = await getSessionUserId()
+    if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
     const supabase = createSupabaseServiceClient()
     const { data, error } = await supabase
       .from('scheduled_jobs')
@@ -32,6 +36,9 @@ export async function POST(req: NextRequest) {
     if (!cron_expression || typeof cron_expression !== 'string') {
       return NextResponse.json({ error: 'cron_expression is required' }, { status: 400 })
     }
+
+    const userId = await getSessionUserId()
+    if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const supabase = createSupabaseServiceClient()
     const { data, error } = await supabase
