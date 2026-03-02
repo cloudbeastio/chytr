@@ -65,6 +65,8 @@ interface LeaderboardsProps {
   topTools: LeaderEntry[]
   topSkills: LeaderEntry[]
   topCommands: LeaderEntry[]
+  topModels?: LeaderEntry[]
+  topCostRepos?: LeaderEntry[]
 }
 
 export function Leaderboards({
@@ -73,13 +75,17 @@ export function Leaderboards({
   topTools,
   topSkills,
   topCommands,
+  topModels = [],
+  topCostRepos = [],
 }: LeaderboardsProps) {
   const empty =
     !topRepos.length &&
     !topAgentActions.length &&
     !topTools.length &&
     !topSkills.length &&
-    !topCommands.length
+    !topCommands.length &&
+    !topModels.length &&
+    !topCostRepos.length
 
   return (
     <Card className="w-full">
@@ -92,7 +98,13 @@ export function Leaderboards({
             No activity data yet
           </p>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 xl:grid-cols-6 gap-6">
+            {topModels.length > 0 && (
+              <LeaderList title="Activity by model" entries={topModels.slice(0, 5)} unit="events" />
+            )}
+            {topCostRepos.length > 0 && (
+              <LeaderList title="Cost by repo" entries={topCostRepos} unit="$" />
+            )}
             <LeaderList title="Top 5 repos (by logs)" entries={topRepos} unit="logs" />
             <LeaderList title="Top 5 agent actions" entries={topAgentActions} unit="events" />
             <LeaderList title="Top 5 tool commands" entries={topTools} unit="calls" />

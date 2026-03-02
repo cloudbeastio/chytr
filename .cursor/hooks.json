@@ -11,6 +11,7 @@
     "afterAgentResponse": [{ "command": "bash .cursor/hooks/chytr-log.sh agent_response" }],
     "subagentStart": [{ "command": "bash .cursor/hooks/chytr-log.sh subagent_start" }],
     "subagentStop": [{ "command": "bash .cursor/hooks/chytr-log.sh subagent_stop" }],
+    "preCompact": [{ "command": "bash .cursor/hooks/chytr-log.sh preCompact" }],
     "sessionEnd": [{ "command": "bash .cursor/hooks/chytr-stop.sh" }],
     "stop": [{ "command": "bash .cursor/hooks/chytr-stop.sh" }]
   }

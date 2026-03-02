@@ -20,6 +20,9 @@ const VALID_EVENT_TYPES = [
   'approval_requested',
   'error',
   'session_end',
+  'preCompact',
+  'pre_compact',
+  'stop',
 ] as const
 
 export async function POST(req: NextRequest) {
@@ -49,14 +52,21 @@ export async function POST(req: NextRequest) {
     const payload = normalizePayload(event_type, body.raw_payload ?? {})
     const repo = body.source_repo ? normalizeRepoUrl(body.source_repo) : null
 
+    const eventTypeForDb =
+      event_type === 'preCompact' ? 'pre_compact' : event_type
+    const model = (payload.model as string) ?? null
+    const conversationId = (payload.conversation_id as string) ?? null
+
     const { error: insertError } = await supabase.from('agent_logs').insert({
       user_id: auth.userId,
       work_order_id: body.work_order_id ?? null,
       agent_id: body.agent_id ?? null,
-      event_type,
+      event_type: eventTypeForDb,
       payload,
       source_repo: repo?.url ?? null,
       source_repo_name: repo?.name ?? null,
+      model,
+      conversation_id: conversationId,
     })
 
     if (insertError) {
@@ -84,12 +94,18 @@ export async function POST(req: NextRequest) {
       )
 
       const status = (body.raw_payload?.status === 'failed') ? 'failed' : 'completed'
+      const durationMs = payload.duration_ms != null ? Number(payload.duration_ms) : null
+      const modelFromPayload = (payload.model as string) ?? null
+      const update: Record<string, unknown> = {
+        status,
+        finished_at: new Date().toISOString(),
+      }
+      if (modelFromPayload != null) update.model = modelFromPayload
+      if (durationMs != null) update.duration_ms = durationMs
+
       await supabase
         .from('work_orders')
-        .update({
-          status,
-          finished_at: new Date().toISOString(),
-        })
+        .update(update)
         .eq('id', body.work_order_id)
         .eq('user_id', auth.userId)
     }

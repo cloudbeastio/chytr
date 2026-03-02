@@ -27,20 +27,34 @@ const ALL_KNOWN_FEATURES = [
 
 async function fetchUsageData() {
   const supabase = await createSupabaseServerClient()
+  const thirtyDaysAgo = new Date()
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+  const startStr = thirtyDaysAgo.toISOString()
 
-  const [{ count: knowledgeCount }, license] = await Promise.all([
+  const [{ count: knowledgeCount }, license, costRes] = await Promise.all([
     supabase.from('knowledge').select('*', { count: 'exact', head: true }),
     loadLicenseFromDB(),
+    supabase
+      .from('work_orders')
+      .select('total_cost')
+      .gte('created_at', startStr),
   ])
+
+  let costLast30Days = 0
+  const costRows = (costRes.data ?? []) as Array<{ total_cost: number }>
+  for (const row of costRows) {
+    costLast30Days += Number(row.total_cost) || 0
+  }
 
   return {
     knowledgeCount: knowledgeCount ?? 0,
     license,
+    costLast30Days,
   }
 }
 
 export default async function UsagePage() {
-  const { knowledgeCount, license } = await fetchUsageData()
+  const { knowledgeCount, license, costLast30Days } = await fetchUsageData()
 
   const knowledgeLimit = license?.limits.knowledge_entries ?? 500
   const logRetentionDays = license?.limits.log_retention_days ?? 7
@@ -56,6 +70,21 @@ export default async function UsagePage() {
           License limits and feature availability
         </p>
       </div>
+
+      {/* Cost in range (last 30 days) */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Cost (last 30 days)</CardTitle>
+          <CardDescription>
+            Sum of work order cost in the last 30 days. Populated when agents report cost (e.g. via Cursor API).
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <p className="text-2xl font-bold">
+            ${costLast30Days.toFixed(2)}
+          </p>
+        </CardContent>
+      </Card>
 
       {/* Knowledge entries usage */}
       <Card>
@@ -102,7 +131,12 @@ export default async function UsagePage() {
             <div>{knowledgeLimit.toLocaleString()}</div>
 
             <div className="text-muted-foreground">Log retention</div>
-            <div>{logRetentionDays} days</div>
+            <div>
+              {logRetentionDays} days
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Logs older than {logRetentionDays} days are purged.
+              </p>
+            </div>
 
             <div className="text-muted-foreground">Agent repos</div>
             <div>{agentReposLimit}</div>

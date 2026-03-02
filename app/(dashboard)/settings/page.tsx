@@ -466,6 +466,59 @@ function ApiKeysTab() {
   )
 }
 
+// ─── Alerts Tab ────────────────────────────────────────────────────────────────
+
+function AlertsTab() {
+  const [costThresholdUsd, setCostThresholdUsd] = useState('')
+  const [state, setState] = useState<SaveState>(IDLE_SAVE)
+
+  async function handleSave() {
+    const num = costThresholdUsd.trim() ? parseFloat(costThresholdUsd) : undefined
+    setState({ saving: true, success: false, error: null })
+    try {
+      await saveSetting(
+        'alert_rules',
+        JSON.stringify({ costThresholdUsd: num != null && !Number.isNaN(num) ? num : null })
+      )
+      setState({ saving: false, success: true, error: null })
+      setTimeout(() => setState(IDLE_SAVE), 3000)
+    } catch (err) {
+      setState({ saving: false, success: false, error: err instanceof Error ? err.message : 'Error' })
+    }
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">Spend alerts</CardTitle>
+        <CardDescription>
+          Optional daily cost threshold. When exceeded, an alert can be sent (Slack / in-app delivery coming soon).
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <div className="space-y-1.5">
+          <Label htmlFor="cost-threshold">Daily cost threshold (USD)</Label>
+          <Input
+            id="cost-threshold"
+            type="number"
+            min={0}
+            step={0.01}
+            placeholder="e.g. 10"
+            value={costThresholdUsd}
+            onChange={(e) => setCostThresholdUsd(e.target.value)}
+          />
+        </div>
+        <div className="flex items-center gap-3">
+          <Button size="sm" onClick={handleSave} disabled={state.saving}>
+            Save
+          </Button>
+          <SaveFeedback state={state} />
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
 // ─── Notifications Tab ────────────────────────────────────────────────────────
 
 function NotificationsTab() {
@@ -630,6 +683,7 @@ export default function SettingsPage() {
           <TabsTrigger value="license">License</TabsTrigger>
           <TabsTrigger value="api-keys">API Keys</TabsTrigger>
           <TabsTrigger value="notifications">Notifications</TabsTrigger>
+          <TabsTrigger value="alerts">Alerts</TabsTrigger>
           <TabsTrigger value="danger">Danger</TabsTrigger>
         </TabsList>
 
@@ -642,6 +696,9 @@ export default function SettingsPage() {
           </TabsContent>
           <TabsContent value="notifications">
             <NotificationsTab />
+          </TabsContent>
+          <TabsContent value="alerts">
+            <AlertsTab />
           </TabsContent>
           <TabsContent value="danger">
             <DangerTab />

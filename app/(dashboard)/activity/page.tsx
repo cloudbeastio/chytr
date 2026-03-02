@@ -30,6 +30,8 @@ const EVENT_LABELS: Record<LogEventType, string> = {
   approval_requested: 'Approval requested',
   error: 'Error',
   session_end: 'Session end',
+  pre_compact: 'Pre compact',
+  stop: 'Stop',
 }
 
 const EVENT_VARIANT: Record<LogEventType, 'default' | 'secondary' | 'destructive' | 'outline'> = {
@@ -48,6 +50,8 @@ const EVENT_VARIANT: Record<LogEventType, 'default' | 'secondary' | 'destructive
   approval_requested: 'default',
   error: 'destructive',
   session_end: 'secondary',
+  pre_compact: 'outline',
+  stop: 'secondary',
 }
 
 function formatTimeAgo(date: Date): string {

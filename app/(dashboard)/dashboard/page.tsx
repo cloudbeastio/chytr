@@ -26,6 +26,9 @@ import { AgentFleet } from '@/components/dashboard/agent-fleet'
 import { Leaderboards } from '@/components/dashboard/leaderboards'
 import { TokenUsage } from '@/components/dashboard/token-usage'
 import { LogUsageChart } from '@/components/dashboard/log-usage-chart'
+import { ContextOverTimeChart } from '@/components/dashboard/context-over-time-chart'
+import { FailureReasonsCard } from '@/components/dashboard/failure-reasons-card'
+import { WOVolumeChart } from '@/components/dashboard/wo-volume-chart'
 
 const STATUS_BADGE: Record<
   WorkOrderStatus,
@@ -87,6 +90,18 @@ interface DashboardData {
   logTimeSeries: Array<{ date: string; total: number; [k: string]: string | number }>
   eventTypes: string[]
   activeRepos: Array<{ source_repo: string; source_repo_name: string; log_count: number }>
+  modelBreakdown: Array<{ name: string; value: number }>
+  contextTimeSeries: Array<{ date: string; context_tokens: number; count: number }>
+  sessionEndReasons: Record<string, number>
+  completionRate: number | null
+  failureReasonsByType: Array<{ name: string; failure_type: string; value: number }>
+  avgDurationMs: number | null
+  woTimeSeries: Array<{ date: string; count: number }>
+  costPerRepo: Array<{ name: string; value: number }>
+  activeAgentsOverTime: Array<{ date: string; count: number }>
+  avgApprovalWaitMs: number | null
+  topSubagentTypes: Array<{ name: string; value: number }>
+  mcpVsOtherTools: { mcp: number; other: number }
   recentWorkOrders: Array<{
     id: string
     objective: string | null
@@ -124,6 +139,16 @@ async function fetchDashboardData(
     recentRes,
     repoLogsRes,
     logsForChartRes,
+    modelLogsRes,
+    preCompactRes,
+    sessionEndRes,
+    toolFailureRes,
+    woDurationRes,
+    woCreatedRes,
+    woCostByRepoRes,
+    agentReposRes,
+    sessionStartRes,
+    approvalsWaitRes,
   ] = await Promise.all([
     supabase
       .from('work_orders')
@@ -190,6 +215,65 @@ async function fetchDashboardData(
       .gte('created_at', startStr)
       .lte('created_at', endStr)
       .limit(8000),
+    supabase
+      .from('agent_logs')
+      .select('model')
+      .not('model', 'is', null)
+      .gte('created_at', startStr)
+      .lte('created_at', endStr)
+      .limit(5000),
+    supabase
+      .from('agent_logs')
+      .select('created_at, payload')
+      .eq('event_type', 'pre_compact')
+      .gte('created_at', startStr)
+      .lte('created_at', endStr)
+      .limit(5000),
+    supabase
+      .from('agent_logs')
+      .select('payload')
+      .eq('event_type', 'session_end')
+      .gte('created_at', startStr)
+      .lte('created_at', endStr)
+      .limit(2000),
+    supabase
+      .from('agent_logs')
+      .select('payload')
+      .eq('event_type', 'tool_failure')
+      .gte('created_at', startStr)
+      .lte('created_at', endStr)
+      .limit(2000),
+    supabase
+      .from('work_orders')
+      .select('duration_ms')
+      .gte('created_at', startStr)
+      .lte('created_at', endStr)
+      .not('duration_ms', 'is', null),
+    supabase
+      .from('work_orders')
+      .select('created_at')
+      .gte('created_at', startStr)
+      .lte('created_at', endStr),
+    supabase
+      .from('work_orders')
+      .select('repo_id, total_cost')
+      .gte('created_at', startStr)
+      .lte('created_at', endStr)
+      .not('repo_id', 'is', null),
+    supabase.from('agent_repos').select('id, repo_url'),
+    supabase
+      .from('agent_logs')
+      .select('created_at, conversation_id, payload')
+      .eq('event_type', 'session_start')
+      .gte('created_at', startStr)
+      .lte('created_at', endStr)
+      .limit(3000),
+    supabase
+      .from('approvals')
+      .select('created_at, decided_at')
+      .not('decided_at', 'is', null)
+      .gte('created_at', startStr)
+      .lte('created_at', endStr),
   ])
 
   const license = licenseRes ?? null
@@ -360,6 +444,155 @@ async function fetchDashboardData(
       return { date, ...counts, total }
     })
 
+  const modelRows = (modelLogsRes.data ?? []) as Array<{ model: string | null }>
+  const modelCount: Record<string, number> = {}
+  for (const row of modelRows) {
+    const m = row.model ?? 'unknown'
+    modelCount[m] = (modelCount[m] ?? 0) + 1
+  }
+  const modelBreakdown = Object.entries(modelCount)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 10)
+    .map(([name, value]) => ({ name, value }))
+
+  const preCompactRows = (preCompactRes.data ?? []) as Array<{
+    created_at: string
+    payload: Record<string, unknown>
+  }>
+  const contextBucket: Record<string, { sum: number; count: number }> = {}
+  for (let t = new Date(start.getTime()); t <= end; t.setDate(t.getDate() + 1)) {
+    contextBucket[dayKey(t)] = { sum: 0, count: 0 }
+  }
+  for (const row of preCompactRows) {
+    const day = row.created_at.slice(0, 10)
+    const tokens = Number((row.payload?.context_tokens ?? row.payload?.contextTokens) ?? 0)
+    if (contextBucket[day]) {
+      contextBucket[day].sum += tokens
+      contextBucket[day].count += 1
+    }
+  }
+  const contextTimeSeries = Object.entries(contextBucket)
+    .sort((a, b) => a[0].localeCompare(b[0]))
+    .map(([date, { sum, count }]) => ({
+      date,
+      context_tokens: sum,
+      count,
+    }))
+
+  const sessionEndRows = (sessionEndRes.data ?? []) as Array<{ payload: Record<string, unknown> }>
+  const sessionEndReasons: Record<string, number> = {}
+  for (const row of sessionEndRows) {
+    const reason = String(row.payload?.reason ?? 'unknown')
+    sessionEndReasons[reason] = (sessionEndReasons[reason] ?? 0) + 1
+  }
+
+  const completed = pipeline.completed
+  const failed = pipeline.failed
+  const completionRate =
+    completed + failed > 0 ? Math.round((completed / (completed + failed)) * 100) : null
+
+  const toolFailureRows = (toolFailureRes.data ?? []) as Array<{ payload: Record<string, unknown> }>
+  const failureKeyCount: Record<string, number> = {}
+  for (const row of toolFailureRows) {
+    const tool = String(row.payload?.tool_name ?? 'unknown')
+    const ft = String(row.payload?.failure_type ?? 'error')
+    const key = `${tool}:${ft}`
+    failureKeyCount[key] = (failureKeyCount[key] ?? 0) + 1
+  }
+  const failureReasonsByType = Object.entries(failureKeyCount)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 10)
+    .map(([key, value]) => {
+      const [name, failure_type] = key.split(':')
+      return { name, failure_type, value }
+    })
+
+  const durationRows = (woDurationRes.data ?? []) as Array<{ duration_ms: number }>
+  const durationSum = durationRows.reduce((s, r) => s + (Number(r.duration_ms) || 0), 0)
+  const avgDurationMs = durationRows.length > 0 ? durationSum / durationRows.length : null
+
+  const woCreatedRows = (woCreatedRes.data ?? []) as Array<{ created_at: string }>
+  const woByDay: Record<string, number> = {}
+  for (let t = new Date(start.getTime()); t <= end; t.setDate(t.getDate() + 1)) {
+    woByDay[dayKey(t)] = 0
+  }
+  for (const row of woCreatedRows) {
+    const day = row.created_at.slice(0, 10)
+    if (woByDay[day] !== undefined) woByDay[day]++
+  }
+  const woTimeSeries = Object.entries(woByDay)
+    .sort((a, b) => a[0].localeCompare(b[0]))
+    .map(([date, count]) => ({ date, count }))
+
+  const woCostRows = (woCostByRepoRes.data ?? []) as Array<{ repo_id: string; total_cost: number }>
+  const agentReposRows = (agentReposRes.data ?? []) as Array<{ id: string; repo_url: string }>
+  const repoUrlById: Record<string, string> = {}
+  for (const r of agentReposRows) repoUrlById[r.id] = r.repo_url
+  const costByRepo: Record<string, number> = {}
+  for (const row of woCostRows) {
+    const id = row.repo_id
+    costByRepo[id] = (costByRepo[id] ?? 0) + (Number(row.total_cost) || 0)
+  }
+  const costPerRepo = Object.entries(costByRepo)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5)
+    .map(([id, value]) => ({
+      name: repoUrlById[id] ?? id.slice(0, 8),
+      value: Math.round(value * 100) / 100,
+    }))
+
+  const sessionStartRows = (sessionStartRes.data ?? []) as Array<{
+    created_at: string
+    conversation_id: string | null
+    payload: Record<string, unknown>
+  }>
+  const backgroundByDay: Record<string, Set<string>> = {}
+  for (let t = new Date(start.getTime()); t <= end; t.setDate(t.getDate() + 1)) {
+    backgroundByDay[dayKey(t)] = new Set()
+  }
+  for (const row of sessionStartRows) {
+    const isBg = row.payload?.is_background_agent === true
+    if (!isBg || !row.conversation_id) continue
+    const day = row.created_at.slice(0, 10)
+    if (backgroundByDay[day]) backgroundByDay[day].add(row.conversation_id)
+  }
+  const activeAgentsOverTime = Object.entries(backgroundByDay)
+    .sort((a, b) => a[0].localeCompare(b[0]))
+    .map(([date, set]) => ({ date, count: set.size }))
+
+  const approvalsWaitRows = (approvalsWaitRes.data ?? []) as Array<{
+    created_at: string
+    decided_at: string | null
+  }>
+  let totalWaitMs = 0
+  let waitCount = 0
+  for (const row of approvalsWaitRows) {
+    if (!row.decided_at) continue
+    const created = new Date(row.created_at).getTime()
+    const decided = new Date(row.decided_at).getTime()
+    totalWaitMs += decided - created
+    waitCount++
+  }
+  const avgApprovalWaitMs = waitCount > 0 ? totalWaitMs / waitCount : null
+
+  const subagentTypeCount: Record<string, number> = {}
+  let mcpCount = 0
+  let toolCallCount = 0
+  for (const row of logsAllRows) {
+    if (row.event_type === 'subagent_start' || row.event_type === 'subagent_stop') {
+      const st = String((row.payload?.subagent_type ?? '') || 'unknown')
+      subagentTypeCount[st] = (subagentTypeCount[st] ?? 0) + 1
+    }
+    if (row.event_type === 'mcp_execution') mcpCount++
+    if (row.event_type === 'tool_call') toolCallCount++
+  }
+  const topSubagentTypes = Object.entries(subagentTypeCount)
+    .filter(([k]) => k)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5)
+    .map(([name, value]) => ({ name, value }))
+  const mcpVsOtherTools = { mcp: mcpCount, other: toolCallCount }
+
   const recentRows = (recentRes.data ?? []) as Array<{
     id: string
     objective: string | null
@@ -407,6 +640,18 @@ async function fetchDashboardData(
     logTimeSeries,
     eventTypes,
     activeRepos,
+    modelBreakdown,
+    contextTimeSeries,
+    sessionEndReasons,
+    completionRate,
+    failureReasonsByType,
+    avgDurationMs,
+    woTimeSeries,
+    costPerRepo,
+    activeAgentsOverTime,
+    avgApprovalWaitMs,
+    topSubagentTypes,
+    mcpVsOtherTools,
     recentWorkOrders,
   }
 }
@@ -429,7 +674,15 @@ function StatsSkeleton() {
   )
 }
 
-function PipelineBar({ pipeline }: { pipeline: Record<WorkOrderStatus, number> }) {
+function PipelineBar({
+  pipeline,
+  completionRate,
+  sessionEndReasons,
+}: {
+  pipeline: Record<WorkOrderStatus, number>
+  completionRate: number | null
+  sessionEndReasons: Record<string, number>
+}) {
   const total =
     pipeline.pending +
     pipeline.running +
@@ -459,12 +712,18 @@ function PipelineBar({ pipeline }: { pipeline: Record<WorkOrderStatus, number> }
     { status: 'failed' as const, count: pipeline.failed, color: 'bg-red-500/70' },
     { status: 'cancelled' as const, count: pipeline.cancelled, color: 'bg-muted-foreground/50' },
   ]
+  const reasonEntries = Object.entries(sessionEndReasons).filter(([, n]) => n > 0)
   return (
     <Card>
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <CardTitle className="text-base">Pipeline</CardTitle>
-          <span className="text-xs text-muted-foreground">{total} in range</span>
+          <span className="text-xs text-muted-foreground">
+            {total} in range
+            {completionRate != null && (
+              <> · {completionRate}% completion rate</>
+            )}
+          </span>
         </div>
         <p className="text-xs text-muted-foreground mt-0.5">
           Work order status breakdown in selected range (pending → running → completed / failed / cancelled)
@@ -492,6 +751,16 @@ function PipelineBar({ pipeline }: { pipeline: Record<WorkOrderStatus, number> }
               )
           )}
         </div>
+        {reasonEntries.length > 0 && (
+          <div className="mt-3 pt-3 border-t border-border">
+            <p className="text-xs font-medium text-muted-foreground mb-1.5">Session end reasons</p>
+            <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
+              {reasonEntries.map(([reason, count]) => (
+                <span key={reason}>{reason}: {count}</span>
+              ))}
+            </div>
+          </div>
+        )}
       </CardContent>
     </Card>
   )
@@ -545,11 +814,21 @@ async function DashboardContent({ range, from, to }: DashboardContentProps) {
         : 'Pro feature',
       isPremium: !data.hasKnowledgeFeature,
     },
+    ...(data.avgDurationMs != null
+      ? [
+          {
+            label: 'Avg run time',
+            value: formatDuration(data.avgDurationMs),
+            icon: Clock,
+            description: 'In selected range',
+          },
+        ]
+      : []),
   ]
 
   return (
     <>
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-5 xl:grid-cols-6 gap-4">
         {stats.map(({ label, value, icon: Icon, description, isPremium }) => (
           <Card key={label}>
             <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
@@ -563,14 +842,20 @@ async function DashboardContent({ range, from, to }: DashboardContentProps) {
               )}
             </CardHeader>
             <CardContent>
-              <p className="text-2xl font-bold">{value.toLocaleString()}</p>
+              <p className="text-2xl font-bold">
+                {typeof value === 'number' ? value.toLocaleString() : value}
+              </p>
               <p className="text-xs text-muted-foreground mt-1">{description}</p>
             </CardContent>
           </Card>
         ))}
       </div>
 
-      <PipelineBar pipeline={data.pipeline} />
+      <PipelineBar
+        pipeline={data.pipeline}
+        completionRate={data.completionRate}
+        sessionEndReasons={data.sessionEndReasons}
+      />
 
       <div className="w-full">
         <Leaderboards
@@ -579,10 +864,46 @@ async function DashboardContent({ range, from, to }: DashboardContentProps) {
           topTools={data.topTools}
           topSkills={data.topSkills}
           topCommands={data.topCommands}
+          topModels={data.modelBreakdown}
+          topCostRepos={data.costPerRepo}
         />
       </div>
 
       <LogUsageChart data={data.logTimeSeries} eventTypes={data.eventTypes} />
+
+      {data.woTimeSeries.some((d) => d.count > 0) && (
+        <WOVolumeChart data={data.woTimeSeries} />
+      )}
+
+      {data.activeAgentsOverTime.some((d) => d.count > 0) && (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base">Active agents over time</CardTitle>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Distinct background agent sessions per day (is_background_agent)
+            </p>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
+              {data.activeAgentsOverTime
+                .filter((d) => d.count > 0)
+                .map((d) => (
+                  <span key={d.date}>
+                    {new Date(d.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}: {d.count}
+                  </span>
+                ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {data.contextTimeSeries.some((d) => d.context_tokens > 0 || d.count > 0) && (
+        <ContextOverTimeChart data={data.contextTimeSeries} />
+      )}
+
+      {data.failureReasonsByType.length > 0 && (
+        <FailureReasonsCard entries={data.failureReasonsByType} />
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <div className="lg:col-span-2 space-y-4">
@@ -672,6 +993,51 @@ async function DashboardContent({ range, from, to }: DashboardContentProps) {
             tokensOut={data.tokensOut}
             totalCost={data.totalCost}
           />
+          {data.avgApprovalWaitMs != null && data.avgApprovalWaitMs > 0 && (
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base">Avg approval wait</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-2xl font-bold">{formatDuration(data.avgApprovalWaitMs)}</p>
+                <p className="text-xs text-muted-foreground mt-1">In selected range</p>
+              </CardContent>
+            </Card>
+          )}
+          {(data.mcpVsOtherTools.mcp > 0 || data.mcpVsOtherTools.other > 0) && (
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base">Tool calls</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-1 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">MCP</span>
+                  <span className="tabular-nums">{data.mcpVsOtherTools.mcp.toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Other tools</span>
+                  <span className="tabular-nums">{data.mcpVsOtherTools.other.toLocaleString()}</span>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+          {data.topSubagentTypes.length > 0 && (
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base">Subagent types</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ul className="space-y-1 text-sm">
+                  {data.topSubagentTypes.map(({ name, value }) => (
+                    <li key={name} className="flex justify-between">
+                      <span className="text-muted-foreground capitalize">{name}</span>
+                      <span className="tabular-nums">{value}</span>
+                    </li>
+                  ))}
+                </ul>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
     </>

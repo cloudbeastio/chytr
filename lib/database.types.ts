@@ -16,6 +16,8 @@ export type LogEventType =
   | 'approval_requested'
   | 'error'
   | 'session_end'
+  | 'pre_compact'
+  | 'stop'
 
 export type AgentStatus = 'active' | 'idle' | 'offline' | 'error'
 export type WorkOrderStatus = 'pending' | 'running' | 'completed' | 'failed' | 'cancelled'
@@ -97,6 +99,8 @@ export interface AgentLog {
   sequence_number: number | null
   source_repo: string | null
   source_repo_name: string | null
+  model: string | null
+  conversation_id: string | null
   created_at: string
 }
 
