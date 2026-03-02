@@ -12,7 +12,7 @@ echo "Installing chytr hooks skill into $(pwd)/.cursor/ ..."
 
 mkdir -p "$INSTALL_DIR/hooks"
 
-# Download hooks.json
+# hooks.json: Cursor requires version (number) + hooks (object keyed by event name)
 curl -fsSL "$REPO/packages/hooks-skill/.cursor/hooks.json" \
   -o "$INSTALL_DIR/hooks.json"
 
