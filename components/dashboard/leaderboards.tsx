@@ -82,7 +82,7 @@ export function Leaderboards({
     !topCommands.length
 
   return (
-    <Card>
+    <Card className="w-full">
       <CardHeader className="pb-3">
         <CardTitle className="text-base">Top 5 leaderboards</CardTitle>
       </CardHeader>
@@ -92,7 +92,7 @@ export function Leaderboards({
             No activity data yet
           </p>
         ) : (
-          <div className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
             <LeaderList title="Top 5 repos (by logs)" entries={topRepos} unit="logs" />
             <LeaderList title="Top 5 agent actions" entries={topAgentActions} unit="events" />
             <LeaderList title="Top 5 tool commands" entries={topTools} unit="calls" />

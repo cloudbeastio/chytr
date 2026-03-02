@@ -441,6 +441,9 @@ function PipelineBar({ pipeline }: { pipeline: Record<WorkOrderStatus, number> }
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-base">Pipeline</CardTitle>
+          <p className="text-xs text-muted-foreground mt-1">
+            Work order status breakdown in selected range
+          </p>
         </CardHeader>
         <CardContent>
           <p className="text-sm text-muted-foreground">No work orders in range</p>
@@ -463,6 +466,9 @@ function PipelineBar({ pipeline }: { pipeline: Record<WorkOrderStatus, number> }
           <CardTitle className="text-base">Pipeline</CardTitle>
           <span className="text-xs text-muted-foreground">{total} in range</span>
         </div>
+        <p className="text-xs text-muted-foreground mt-0.5">
+          Work order status breakdown in selected range (pending → running → completed / failed / cancelled)
+        </p>
       </CardHeader>
       <CardContent>
         <div className="h-2 rounded-full bg-muted overflow-hidden flex">
@@ -566,6 +572,16 @@ async function DashboardContent({ range, from, to }: DashboardContentProps) {
 
       <PipelineBar pipeline={data.pipeline} />
 
+      <div className="w-full">
+        <Leaderboards
+          topRepos={data.topRepos}
+          topAgentActions={data.topAgentActions}
+          topTools={data.topTools}
+          topSkills={data.topSkills}
+          topCommands={data.topCommands}
+        />
+      </div>
+
       <LogUsageChart data={data.logTimeSeries} eventTypes={data.eventTypes} />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -655,13 +671,6 @@ async function DashboardContent({ range, from, to }: DashboardContentProps) {
             tokensIn={data.tokensIn}
             tokensOut={data.tokensOut}
             totalCost={data.totalCost}
-          />
-          <Leaderboards
-            topRepos={data.topRepos}
-            topAgentActions={data.topAgentActions}
-            topTools={data.topTools}
-            topSkills={data.topSkills}
-            topCommands={data.topCommands}
           />
         </div>
       </div>
