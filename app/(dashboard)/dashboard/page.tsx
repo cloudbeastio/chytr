@@ -25,6 +25,7 @@ import { TimeRangePicker } from '@/components/dashboard/time-range-picker'
 import { AgentFleet } from '@/components/dashboard/agent-fleet'
 import { Leaderboards } from '@/components/dashboard/leaderboards'
 import { TokenUsage } from '@/components/dashboard/token-usage'
+import { LogUsageChart } from '@/components/dashboard/log-usage-chart'
 
 const STATUS_BADGE: Record<
   WorkOrderStatus,
@@ -80,6 +81,11 @@ interface DashboardData {
   tokensIn: number
   tokensOut: number
   totalCost: number
+  topRepos: Array<{ name: string; value: number }>
+  topAgentActions: Array<{ name: string; value: number }>
+  topCommands: Array<{ name: string; value: number }>
+  logTimeSeries: Array<{ date: string; total: number; [k: string]: string | number }>
+  eventTypes: string[]
   activeRepos: Array<{ source_repo: string; source_repo_name: string; log_count: number }>
   recentWorkOrders: Array<{
     id: string
@@ -117,6 +123,7 @@ async function fetchDashboardData(
     tokenSumsRes,
     recentRes,
     repoLogsRes,
+    logsForChartRes,
   ] = await Promise.all([
     supabase
       .from('work_orders')
@@ -177,6 +184,12 @@ async function fetchDashboardData(
       .gte('created_at', startStr)
       .lte('created_at', endStr)
       .limit(5000),
+    supabase
+      .from('agent_logs')
+      .select('event_type, created_at, payload')
+      .gte('created_at', startStr)
+      .lte('created_at', endStr)
+      .limit(8000),
   ])
 
   const license = licenseRes ?? null
@@ -293,6 +306,60 @@ async function fetchDashboardData(
     .sort((a, b) => b.log_count - a.log_count)
     .slice(0, 10)
 
+  const topRepos = activeRepos.slice(0, 5).map((r) => ({
+    name: r.source_repo_name || r.source_repo,
+    value: r.log_count,
+  }))
+
+  const logsAllRows = (logsForChartRes.data ?? []) as Array<{
+    event_type: string
+    created_at: string
+    payload: Record<string, unknown>
+  }>
+
+  const eventTypeCount: Record<string, number> = {}
+  const commandCount: Record<string, number> = {}
+  const bucket: Record<string, Record<string, number>> = {}
+
+  function dayKey(d: Date): string {
+    return d.toISOString().slice(0, 10)
+  }
+  for (let t = new Date(start.getTime()); t <= end; t.setDate(t.getDate() + 1)) {
+    bucket[dayKey(t)] = {}
+  }
+
+  for (const row of logsAllRows) {
+    const et = row.event_type
+    eventTypeCount[et] = (eventTypeCount[et] ?? 0) + 1
+    const day = row.created_at.slice(0, 10)
+    if (bucket[day]) {
+      bucket[day][et] = (bucket[day][et] ?? 0) + 1
+    }
+    if (et === 'shell_execution') {
+      const cmd = (row.payload?.command as string) ?? (row.payload?.cmd as string) ?? ''
+      const label = cmd.length > 40 ? cmd.slice(0, 40) + '…' : cmd || '(empty)'
+      commandCount[label] = (commandCount[label] ?? 0) + 1
+    }
+  }
+
+  const topAgentActions = Object.entries(eventTypeCount)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5)
+    .map(([name, value]) => ({ name: name.replace(/_/g, ' '), value }))
+
+  const topCommands = Object.entries(commandCount)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5)
+    .map(([name, value]) => ({ name, value }))
+
+  const eventTypes = Object.keys(eventTypeCount).sort()
+  const logTimeSeries = Object.entries(bucket)
+    .sort((a, b) => a[0].localeCompare(b[0]))
+    .map(([date, counts]) => {
+      const total = Object.values(counts).reduce((s, n) => s + n, 0)
+      return { date, ...counts, total }
+    })
+
   const recentRows = (recentRes.data ?? []) as Array<{
     id: string
     objective: string | null
@@ -334,6 +401,11 @@ async function fetchDashboardData(
     tokensIn,
     tokensOut,
     totalCost,
+    topRepos,
+    topAgentActions,
+    topCommands,
+    logTimeSeries,
+    eventTypes,
     activeRepos,
     recentWorkOrders,
   }
@@ -494,6 +566,8 @@ async function DashboardContent({ range, from, to }: DashboardContentProps) {
 
       <PipelineBar pipeline={data.pipeline} />
 
+      <LogUsageChart data={data.logTimeSeries} eventTypes={data.eventTypes} />
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <div className="lg:col-span-2 space-y-4">
           <AgentFleet agents={data.fleet} />
@@ -583,9 +657,11 @@ async function DashboardContent({ range, from, to }: DashboardContentProps) {
             totalCost={data.totalCost}
           />
           <Leaderboards
-            topAgents={data.topAgents}
+            topRepos={data.topRepos}
+            topAgentActions={data.topAgentActions}
             topTools={data.topTools}
             topSkills={data.topSkills}
+            topCommands={data.topCommands}
           />
         </div>
       </div>

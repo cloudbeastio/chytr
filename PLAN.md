@@ -353,6 +353,52 @@ STRIPE_WEBHOOK_SECRET=
 
 ---
 
+## Dashboard Re-envision: All-Encompassing Agent Monitoring
+
+**Goal**: Turn the dashboard from summary cards + recent activity into a single pane for fleet health, pipeline, performance, cost, and ops — with drill-down and optional time range.
+
+### Pillars
+
+| Pillar | What to show | Data source |
+|--------|--------------|-------------|
+| **Fleet** | Who's online, heartbeat, running count per agent, type/role | `agents`, `agent_stats` (running) |
+| **Pipeline** | Funnel: pending → running → completed / failed / cancelled; throughput (today / 7d); queue depth | `work_orders` counts + time filters |
+| **Performance** | Latency (avg, p50/p95 optional), tool success rate, skill usage | `agent_stats`, `tool_stats`, `skill_stats` |
+| **Cost & tokens** | Input / output / total tokens; cost by agent or time; optional trend | `work_orders` sums, `agent_stats` |
+| **Quality** | Completion vs failure rate; pending approvals; optional summary/error preview | `work_orders`, `approvals`, `summary` / `error_message` |
+| **Ops** | Jobs: next run, last status; repos/hooks; recent errors | `scheduled_jobs`, `job_runs`, `agent_repos`, `agent_logs` (event_type = 'error') |
+
+### Proposed layout (single "Mission Control" page)
+
+1. **Header** — Title "Agent monitoring" or "Mission control", optional **time range** (Today / 7d / 30d) and **Refresh**.
+2. **Row 1 — At-a-glance** — Keep 4 cards but make them **contextual**: e.g. Work orders (total), Active agents / total, Tool calls (in range), Pending approvals. Optional: small delta vs previous period.
+3. **Row 2 — Pipeline + Fleet** — **Pipeline / mission board**: status breakdown (pending, running, completed, failed, cancelled) with **counts + % bar**. **Agent fleet**: list of agents with status dot, name, type, last heartbeat, running / completed / failed. Link to `/agents` and work-orders?agent_id=X.
+4. **Row 3 — Leaderboards + Token usage** — Top agents (runs), top tools (calls), top skills (loads) from `agent_stats`, `tool_stats`, `skill_stats`. **Token usage**: input / output / total and cost for range. Optional in/out bar.
+5. **Row 4 — Recent activity (detailed)** — Last N work orders with objective, **agent name**, repo, status, **summary or error snippet**, duration, time. Link to `/work-orders/[id]`.
+6. **Optional row 5 — Ops** — Next scheduled jobs; recent errors from `agent_logs` (event_type = 'error').
+
+### Data / backend
+
+- **Existing**: `agent_stats`, `tool_stats`, `skill_stats`, `work_orders`, `agents`, `approvals`, `agent_logs`, `scheduled_jobs`, `job_runs`, `agent_repos`. No new tables for v1.
+- **Optional**: View or RPC for `work_order_status_counts` / time-bucketed counts for range selector.
+- **Single load**: One server component (or API route) running 4–6 parallel queries; pass props to sections. Prefer server components.
+
+### Phasing
+
+- **Phase A**: Pipeline bar, fleet list, leaderboards (real data), token usage, richer recent activity (agent, summary/error, duration). No time range.
+- **Phase B**: Time range selector; wire counts and token sums to range; optional delta on cards.
+- **Phase C**: Ops row (jobs + recent errors); optional latency percentiles.
+
+### Unresolved questions (dashboard re-envision)
+
+- Time range: URL (`?range=7d`) or local state?
+- p50/p95 latency: new view or skip v1?
+- Alerts (agent offline, failure rate): in-app only or email/Slack?
+- Page title: "Mission control" vs "Dashboard"?
+- Show knowledge learned count on dashboard?
+
+---
+
 ## Repo Structure (updated)
 
 ```

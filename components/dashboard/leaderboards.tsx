@@ -40,7 +40,7 @@ function LeaderList({ title, entries, unit }: { title: string; entries: LeaderEn
                 ) : (
                   <span className="w-3.5 text-center text-[10px] text-muted-foreground shrink-0">{i + 1}</span>
                 )}
-                <span className="text-xs truncate flex-1">{entry.name}</span>
+                <span className="text-xs truncate flex-1" title={entry.name}>{entry.name}</span>
                 <span className="text-xs tabular-nums text-muted-foreground shrink-0">
                   {entry.value.toLocaleString()} {unit}
                 </span>
@@ -60,18 +60,31 @@ function LeaderList({ title, entries, unit }: { title: string; entries: LeaderEn
 }
 
 interface LeaderboardsProps {
-  topAgents: LeaderEntry[]
+  topRepos: LeaderEntry[]
+  topAgentActions: LeaderEntry[]
   topTools: LeaderEntry[]
   topSkills: LeaderEntry[]
+  topCommands: LeaderEntry[]
 }
 
-export function Leaderboards({ topAgents, topTools, topSkills }: LeaderboardsProps) {
-  const empty = !topAgents.length && !topTools.length && !topSkills.length
+export function Leaderboards({
+  topRepos,
+  topAgentActions,
+  topTools,
+  topSkills,
+  topCommands,
+}: LeaderboardsProps) {
+  const empty =
+    !topRepos.length &&
+    !topAgentActions.length &&
+    !topTools.length &&
+    !topSkills.length &&
+    !topCommands.length
 
   return (
     <Card>
       <CardHeader className="pb-3">
-        <CardTitle className="text-base">Leaderboards</CardTitle>
+        <CardTitle className="text-base">Top 5 leaderboards</CardTitle>
       </CardHeader>
       <CardContent>
         {empty ? (
@@ -80,9 +93,11 @@ export function Leaderboards({ topAgents, topTools, topSkills }: LeaderboardsPro
           </p>
         ) : (
           <div className="space-y-6">
-            <LeaderList title="Top Agents" entries={topAgents} unit="runs" />
-            <LeaderList title="Top Tools" entries={topTools} unit="calls" />
-            <LeaderList title="Top Skills" entries={topSkills} unit="loads" />
+            <LeaderList title="Top 5 repos (by logs)" entries={topRepos} unit="logs" />
+            <LeaderList title="Top 5 agent actions" entries={topAgentActions} unit="events" />
+            <LeaderList title="Top 5 tool commands" entries={topTools} unit="calls" />
+            <LeaderList title="Top 5 skills" entries={topSkills} unit="loads" />
+            <LeaderList title="Top 5 commands" entries={topCommands} unit="runs" />
           </div>
         )}
       </CardContent>
