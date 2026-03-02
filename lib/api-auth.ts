@@ -1,5 +1,5 @@
 import { createHash } from 'crypto'
-import { NextRequest } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { createSupabaseServiceClient } from '@/lib/supabase'
 
 const PREFIX = 'chk_'
@@ -54,4 +54,18 @@ export async function authenticateApiKey(req: NextRequest): Promise<ApiKeyAuth |
 export function generateApiKeyValue(): string {
   const bytes = crypto.getRandomValues(new Uint8Array(16))
   return PREFIX + Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('')
+}
+
+/** Returns { valid, response? } for routes that expect validateApiKey. Uses api_keys table. */
+export async function validateApiKey(
+  req: NextRequest
+): Promise<{ valid: boolean; response?: NextResponse }> {
+  const auth = await authenticateApiKey(req)
+  if (!auth) {
+    return {
+      valid: false,
+      response: NextResponse.json({ error: 'Invalid or missing API key' }, { status: 401 }),
+    }
+  }
+  return { valid: true }
 }

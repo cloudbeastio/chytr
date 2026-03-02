@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { validateApiKey } from '@/lib/api-auth'
-import { validateAndStoreLicense } from '@/lib/license'
+import { validateAndStoreLicense } from '@/lib/license-server'
 
 export async function POST(req: NextRequest) {
   const auth = await validateApiKey(req)

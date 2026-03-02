@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { validateApiKey } from '@/lib/api-auth'
 import { createSupabaseServiceClient } from '@/lib/supabase'
-import { loadLicenseFromDB } from '@/lib/license'
+import { loadLicenseFromDB } from '@/lib/license-server'
 import { launchAgent } from '@/lib/services/launch-agent'
 
 export async function POST(req: NextRequest) {
