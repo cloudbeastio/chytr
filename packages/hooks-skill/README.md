@@ -23,27 +23,34 @@ This copies `.cursor/hooks.json` and the three hook scripts into your repo's `.c
 | Variable | Required | Description |
 |---|---|---|
 | `CHYTR_URL` or `CHYTR_PUBLIC_URL` | Yes | App base URL (e.g. `https://app.chytr.ai` or `http://localhost:3000`) — events POST to `{URL}/api/v1/ingest` |
-| `CHYTR_API_KEY` | Yes | API key from chytr Settings → API Keys — Bearer auth for `/api/v1/ingest` and `/api/v1/knowledge/query` |
-| `WORK_ORDER_ID` | Recommended | ID of the active work order — scopes all events to a task |
+| `CHYTR_API_KEY` | Yes | API key from chytr **Settings → API Keys** — Bearer auth for `/api/v1/ingest` and `/api/v1/knowledge/query` |
+| `WORK_ORDER_ID` | Optional | ID of the active work order — scopes all events to a task |
 | `CHYTR_AGENT_ID` | Optional | Agent identifier — useful when running multiple agents |
+| `CHYTR_REPO` | Optional | Override repo URL — auto-detected from `git remote get-url origin` if unset |
 
-Set them in your shell, `.env`, `.env.local`, or Cursor cloud env (or inject via `.cursor` env):
+### Local setup (`.env.local`)
 
-```json
-{
-  "mcpServers": {
-    "your-server": {
-      "env": {
-        "CHYTR_URL": "https://app.chytr.ai",
-        "CHYTR_API_KEY": "your-api-key",
-        "WORK_ORDER_ID": "wo_abc123"
-      }
-    }
-  }
-}
+Create `.env.local` in your repo root:
+
+```bash
+CHYTR_URL=https://app.chytr.ai
+CHYTR_API_KEY=chk_your_api_key_here
 ```
 
-If `CHYTR_URL`/`CHYTR_PUBLIC_URL` or `CHYTR_API_KEY` are not set, all hooks exit silently — no errors, no noise. Scripts may source `.env.local` from project root when the key is missing (e.g. when Cursor doesn't inject env).
+Hooks auto-source `.env.local` from the project root when env vars aren't already set. This is the simplest way to start streaming logs — just an API key and URL.
+
+### Cursor Cloud Agent setup
+
+When launching agents via Cursor Cloud or the chytr dashboard, add these to your Cursor Cloud Agent environment:
+
+```
+CHYTR_URL=https://app.chytr.ai
+CHYTR_API_KEY=chk_your_api_key_here
+```
+
+`WORK_ORDER_ID` is auto-set when launching from the chytr dashboard. The repo URL is auto-detected from the cloned repo's git remote.
+
+If `CHYTR_URL`/`CHYTR_PUBLIC_URL` or `CHYTR_API_KEY` are not set, all hooks exit silently — no errors, no noise.
 
 ## How work order IDs work
 
@@ -76,9 +83,12 @@ Every event POSTs to `POST /api/v1/ingest`:
   "event_type": "tool_call",
   "work_order_id": "wo_abc123",
   "agent_id": "agent_xyz",
+  "source_repo": "https://github.com/your-org/your-repo",
   "raw_payload": { ...cursor hook payload... }
 }
 ```
+
+`source_repo` is auto-detected from `git remote get-url origin`. The server normalizes it (SSH → HTTPS, strips `.git`) and stores both the full URL and a short `org/repo` display name for dashboard grouping.
 
 All hooks are fire-and-forget with a 5s timeout (`chytr-stop.sh` uses 10s to allow validation). Failures are swallowed — hooks never block or break agent execution.
 

@@ -22,14 +22,47 @@ This creates:
 
 ## Configure
 
-Set these env vars in your shell profile or `.env`:
+You need two env vars to stream logs. Get your API key from **Settings → API Keys** in the chytr dashboard.
+
+### Option A: Local `.env.local` (for local Cursor sessions)
+
+Create `.env.local` in your repo root:
 
 ```bash
-export CHYTR_URL=https://your-supabase-url.supabase.co
-export CHYTR_SERVICE_KEY=your-service-role-key
+CHYTR_URL=https://app.chytr.ai        # or http://localhost:3000 for self-hosted
+CHYTR_API_KEY=chk_your_api_key_here
 ```
 
-These are your **self-hosted Supabase** URL and service role key (not anon key).
+Hooks auto-source `.env.local` from the project root when env vars aren't already set.
+
+### Option B: Cursor Cloud Agent settings (for cloud agents)
+
+When launching agents via Cursor Cloud or the chytr dashboard, set env vars in your Cursor Cloud Agent configuration:
+
+```
+CHYTR_URL=https://app.chytr.ai
+CHYTR_API_KEY=chk_your_api_key_here
+WORK_ORDER_ID=<auto-set by chytr when launching from dashboard>
+```
+
+These get injected into the agent's environment so hooks can stream logs back to your dashboard.
+
+### Option C: Shell / CI environment
+
+```bash
+export CHYTR_URL=https://app.chytr.ai
+export CHYTR_API_KEY=chk_your_api_key_here
+```
+
+## Repo tracking
+
+Hooks auto-detect the git remote (`git remote get-url origin`) and send it with every log event. Logs are grouped by repo in the dashboard — no extra config needed.
+
+To override the detected repo (e.g. in CI or forks):
+
+```bash
+export CHYTR_REPO=https://github.com/your-org/your-repo
+```
 
 ## Pass work order ID
 
@@ -39,7 +72,7 @@ To link agent sessions to a work order, set:
 export WORK_ORDER_ID=uuid-of-the-work-order
 ```
 
-This is automatically set when launching via the chytr dashboard. For local dev sessions, either set manually or let chytr auto-create a local work order on `sessionStart`.
+This is automatically set when launching via the chytr dashboard. For local dev sessions, set manually or omit — logs still stream and are grouped by repo.
 
 ## Hooks that are installed
 
