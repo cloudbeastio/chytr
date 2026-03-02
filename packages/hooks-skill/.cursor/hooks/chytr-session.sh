@@ -1,7 +1,13 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-CHYTR_URL="${CHYTR_URL:-}"
+# Load .env.local from project root if API key not set
+if [ -z "${CHYTR_API_KEY:-}" ]; then
+  ROOT="$(cd "$(dirname "$0")/../.." 2>/dev/null && pwd)"
+  [ -n "$ROOT" ] && [ -f "$ROOT/.env.local" ] && set -a && source "$ROOT/.env.local" && set +a
+fi
+
+CHYTR_URL="${CHYTR_URL:-${CHYTR_PUBLIC_URL:-}}"
 CHYTR_API_KEY="${CHYTR_API_KEY:-}"
 WORK_ORDER_ID="${WORK_ORDER_ID:-}"
 CHYTR_AGENT_ID="${CHYTR_AGENT_ID:-}"
@@ -26,13 +32,13 @@ curl -sf --max-time 5 -X POST \
   -H "Authorization: Bearer $CHYTR_API_KEY" \
   -H "Content-Type: application/json" \
   -d "$BODY" \
-  "$CHYTR_URL/api/v1/ingest" > /dev/null 2>&1 || true
+  "${CHYTR_URL%/}/api/v1/ingest" > /dev/null 2>&1 || true
 
 KNOWLEDGE=""
 if [ -n "$WORK_ORDER_ID" ]; then
   RESP=$(curl -sf --max-time 5 \
     -H "Authorization: Bearer $CHYTR_API_KEY" \
-    "$CHYTR_URL/api/v1/knowledge/query?work_order_id=$WORK_ORDER_ID" 2>/dev/null || echo "{}")
+    "${CHYTR_URL%/}/api/v1/knowledge/query?work_order_id=$WORK_ORDER_ID" 2>/dev/null || echo "{}")
   if command -v jq >/dev/null 2>&1; then
     KNOWLEDGE=$(echo "$RESP" | jq -r '.formatted // ""')
   else

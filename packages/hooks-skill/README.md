@@ -22,12 +22,12 @@ This copies `.cursor/hooks.json` and the three hook scripts into your repo's `.c
 
 | Variable | Required | Description |
 |---|---|---|
-| `CHYTR_URL` | Yes | Your chytr instance URL (e.g. `https://app.chytr.ai` or `http://localhost:3000`) |
-| `CHYTR_API_KEY` | Yes | chytr API key — authenticates hook POSTs |
+| `CHYTR_URL` or `CHYTR_PUBLIC_URL` | Yes | App base URL (e.g. `https://app.chytr.ai` or `http://localhost:3000`) — events POST to `{URL}/api/v1/ingest` |
+| `CHYTR_API_KEY` | Yes | API key from chytr Settings → API Keys — Bearer auth for `/api/v1/ingest` and `/api/v1/knowledge/query` |
 | `WORK_ORDER_ID` | Recommended | ID of the active work order — scopes all events to a task |
 | `CHYTR_AGENT_ID` | Optional | Agent identifier — useful when running multiple agents |
 
-Set them in your shell, `.env`, or inject via `.cursor/mcp.json`:
+Set them in your shell, `.env`, `.env.local`, or Cursor cloud env (or inject via `.cursor` env):
 
 ```json
 {
@@ -43,11 +43,11 @@ Set them in your shell, `.env`, or inject via `.cursor/mcp.json`:
 }
 ```
 
-If `CHYTR_URL` or `CHYTR_API_KEY` are not set, all hooks exit silently — no errors, no noise.
+If `CHYTR_URL`/`CHYTR_PUBLIC_URL` or `CHYTR_API_KEY` are not set, all hooks exit silently — no errors, no noise. Scripts may source `.env.local` from project root when the key is missing (e.g. when Cursor doesn't inject env).
 
 ## How work order IDs work
 
-Set `WORK_ORDER_ID` before starting a session to tie every log event to a specific task. On `SessionStart`, the hooks skill queries `GET /api/v1/knowledge?work_order_id=<id>` and injects any returned knowledge as `additional_context` into the agent session — so the agent picks up where the last run left off.
+Set `WORK_ORDER_ID` before starting a session to tie every log event to a specific task. On `SessionStart`, the hooks skill queries `GET /api/v1/knowledge/query?work_order_id=<id>` and injects any returned knowledge as `additional_context` into the agent session — so the agent picks up where the last run left off.
 
 On `Stop`, the ingest endpoint can return a `followup_message` field which gets surfaced back to the agent as a continuation prompt — enabling automatic work order validation and loop-back if the definition of done isn't met.
 

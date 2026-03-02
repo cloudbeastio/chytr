@@ -1,12 +1,18 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-CHYTR_URL="${CHYTR_URL:-}"
-CHYTR_SERVICE_KEY="${CHYTR_SERVICE_KEY:-}"
+# Load .env.local from project root if vars not set
+if [ -z "${CHYTR_API_KEY:-}" ]; then
+  ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+  [ -f "$ROOT/.env.local" ] && set -a && source "$ROOT/.env.local" && set +a
+fi
+
+CHYTR_URL="${CHYTR_URL:-${CHYTR_PUBLIC_URL:-}}"
+CHYTR_API_KEY="${CHYTR_API_KEY:-}"
 WORK_ORDER_ID="${WORK_ORDER_ID:-}"
 
 # Log the session end
-if [ -n "$CHYTR_URL" ] && [ -n "$CHYTR_SERVICE_KEY" ]; then
+if [ -n "$CHYTR_URL" ] && [ -n "$CHYTR_API_KEY" ]; then
   RAW_PAYLOAD=$(cat)
 
   BODY=$(cat <<EOF
@@ -20,10 +26,10 @@ EOF
 
   RESPONSE=$(curl -sf --max-time 10 \
     -X POST \
-    -H "Authorization: Bearer $CHYTR_SERVICE_KEY" \
+    -H "Authorization: Bearer $CHYTR_API_KEY" \
     -H "Content-Type: application/json" \
     -d "$BODY" \
-    "$CHYTR_URL/functions/v1/ingest-log" 2>/dev/null || echo "{}")
+    "${CHYTR_URL%/}/api/v1/ingest" 2>/dev/null || echo "{}")
 
   # If ingest-log returns a followup_message, output it
   FOLLOWUP=$(echo "$RESPONSE" | grep -o '"followup_message":"[^"]*"' | cut -d'"' -f4 2>/dev/null || echo "")

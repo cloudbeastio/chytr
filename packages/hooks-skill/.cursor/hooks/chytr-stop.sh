@@ -1,7 +1,13 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-CHYTR_URL="${CHYTR_URL:-}"
+# Load .env.local from project root if API key not set
+if [ -z "${CHYTR_API_KEY:-}" ]; then
+  ROOT="$(cd "$(dirname "$0")/../.." 2>/dev/null && pwd)"
+  [ -n "$ROOT" ] && [ -f "$ROOT/.env.local" ] && set -a && source "$ROOT/.env.local" && set +a
+fi
+
+CHYTR_URL="${CHYTR_URL:-${CHYTR_PUBLIC_URL:-}}"
 CHYTR_API_KEY="${CHYTR_API_KEY:-}"
 WORK_ORDER_ID="${WORK_ORDER_ID:-}"
 
@@ -25,7 +31,7 @@ RESPONSE=$(curl -sf --max-time 10 \
   -H "Authorization: Bearer $CHYTR_API_KEY" \
   -H "Content-Type: application/json" \
   -d "$BODY" \
-  "$CHYTR_URL/api/v1/ingest" 2>/dev/null || echo "{}")
+    "${CHYTR_URL%/}/api/v1/ingest" 2>/dev/null || echo "{}")
 
 FOLLOWUP=$(echo "$RESPONSE" | grep -o '"followup_message":"[^"]*"' | cut -d'"' -f4 2>/dev/null || echo "")
 
