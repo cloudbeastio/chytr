@@ -1,20 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Resolve project root: script-relative then CWD (Cursor may run with CWD = workspace)
-ROOT=""
-if [ -n "${BASH_SOURCE[0]:-}" ]; then
-  ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." 2>/dev/null && pwd)"
-fi
-[ -z "$ROOT" ] && [ -n "${PWD:-}" ] && [ -f "${PWD}/.env.local" ] && ROOT="$PWD"
-
-# Load .env.local if API key not set
+# Load .env.local from project root if API key not set
 if [ -z "${CHYTR_API_KEY:-}" ]; then
-  if [ -n "$ROOT" ] && [ -f "$ROOT/.env.local" ]; then
-    set -a && source "$ROOT/.env.local" && set +a
-  elif [ -f ".env.local" ]; then
-    set -a && source ".env.local" && set +a
-  fi
+  ROOT="$(cd "$(dirname "$0")/../.." 2>/dev/null && pwd)"
+  [ -n "$ROOT" ] && [ -f "$ROOT/.env.local" ] && set -a && source "$ROOT/.env.local" && set +a
 fi
 
 CHYTR_URL="${CHYTR_URL:-${CHYTR_PUBLIC_URL:-}}"
@@ -22,14 +12,7 @@ CHYTR_API_KEY="${CHYTR_API_KEY:-}"
 WORK_ORDER_ID="${WORK_ORDER_ID:-}"
 CHYTR_AGENT_ID="${CHYTR_AGENT_ID:-}"
 
-DEBUG_LOG=""
-if [ -n "${CHYTR_HOOK_DEBUG:-}" ]; then
-  DEBUG_LOG="${ROOT:-.}/.cursor/hooks/debug.log"
-  echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] chytr-session url_set=$([ -n "$CHYTR_URL" ] && echo 1 || echo 0) key_set=$([ -n "$CHYTR_API_KEY" ] && echo 1 || echo 0) root=${ROOT:-none}" >> "$DEBUG_LOG" 2>/dev/null || true
-fi
-
 if [ -z "$CHYTR_URL" ] || [ -z "$CHYTR_API_KEY" ]; then
-  [ -n "$DEBUG_LOG" ] && echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] chytr-session skip (no url or key)" >> "$DEBUG_LOG" 2>/dev/null || true
   exit 0
 fi
 

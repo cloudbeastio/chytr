@@ -95,6 +95,8 @@ export interface AgentLog {
   event_type: LogEventType
   payload: Json
   sequence_number: number | null
+  source_repo: string | null
+  source_repo_name: string | null
   created_at: string
 }
 

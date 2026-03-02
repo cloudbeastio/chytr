@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createSupabaseServiceClient } from '@/lib/supabase'
 import { authenticateApiKey } from '@/lib/api-auth'
 import { normalizePayload, checkDefinitionOfDone } from '@/lib/ingest-helpers'
+import { normalizeRepoUrl } from '@/lib/repo-utils'
 
 const VALID_EVENT_TYPES = [
   'session_start',
@@ -32,6 +33,7 @@ export async function POST(req: NextRequest) {
       event_type?: string
       work_order_id?: string
       agent_id?: string
+      source_repo?: string
       raw_payload?: Record<string, unknown>
     }
 
@@ -45,6 +47,7 @@ export async function POST(req: NextRequest) {
 
     const supabase = createSupabaseServiceClient()
     const payload = normalizePayload(event_type, body.raw_payload ?? {})
+    const repo = body.source_repo ? normalizeRepoUrl(body.source_repo) : null
 
     const { error: insertError } = await supabase.from('agent_logs').insert({
       user_id: auth.userId,
@@ -52,6 +55,8 @@ export async function POST(req: NextRequest) {
       agent_id: body.agent_id ?? null,
       event_type,
       payload,
+      source_repo: repo?.url ?? null,
+      source_repo_name: repo?.name ?? null,
     })
 
     if (insertError) {
