@@ -1,0 +1,22 @@
+---
+description: When changing hooks config or chytr hook scripts, keep packages/hooks-skill in sync and update install.sh
+globs: .cursor/hooks.json, .cursor/hooks/chytr*.sh, packages/hooks-skill/install.sh
+---
+
+# Hooks / hooks-skill sync
+
+When you **modify** any of:
+
+- `.cursor/hooks.json`
+- `.cursor/hooks/chytr*.sh` (chytr-log.sh, chytr-session.sh, chytr-stop.sh, or any new chytr*.sh)
+
+you **must**:
+
+1. **Copy** the same content into `packages/hooks-skill/.cursor/`:
+   - `hooks.json` → `packages/hooks-skill/.cursor/hooks.json`
+   - Each `chytr*.sh` → `packages/hooks-skill/.cursor/hooks/<same name>`
+
+2. **Update** `packages/hooks-skill/install.sh` so the script list matches the set of chytr hook scripts:
+   - In the `for SCRIPT in ...` line, list exactly the `chytr*.sh` files that exist in `packages/hooks-skill/.cursor/hooks/` (e.g. `chytr-log.sh chytr-session.sh chytr-stop.sh`). Add any new chytr*.sh; remove any that were deleted.
+
+Install script is the source of truth for what gets downloaded; the package under `packages/hooks-skill/.cursor/` is what the install script serves. Keep them in sync so `install.sh` delivers the same hooks and config as the repo root `.cursor/`.

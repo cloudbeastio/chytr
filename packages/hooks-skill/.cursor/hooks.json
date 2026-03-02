@@ -1,59 +1,17 @@
 {
-  "hooks": [
-    {
-      "name": "chytr-session",
-      "event": "SessionStart",
-      "command": "bash .cursor/hooks/chytr-session.sh"
-    },
-    {
-      "name": "chytr-log-tool",
-      "event": "PostToolUse",
-      "command": "bash .cursor/hooks/chytr-log.sh tool_call"
-    },
-    {
-      "name": "chytr-log-tool-fail",
-      "event": "PostToolUseFailure",
-      "command": "bash .cursor/hooks/chytr-log.sh tool_failure"
-    },
-    {
-      "name": "chytr-log-shell",
-      "event": "AfterShellExecution",
-      "command": "bash .cursor/hooks/chytr-log.sh shell_execution"
-    },
-    {
-      "name": "chytr-log-file",
-      "event": "AfterFileEdit",
-      "command": "bash .cursor/hooks/chytr-log.sh file_edit"
-    },
-    {
-      "name": "chytr-log-mcp",
-      "event": "AfterMCPExecution",
-      "command": "bash .cursor/hooks/chytr-log.sh mcp_execution"
-    },
-    {
-      "name": "chytr-log-thought",
-      "event": "AfterAgentThought",
-      "command": "bash .cursor/hooks/chytr-log.sh agent_thought"
-    },
-    {
-      "name": "chytr-log-response",
-      "event": "AfterAgentResponse",
-      "command": "bash .cursor/hooks/chytr-log.sh agent_response"
-    },
-    {
-      "name": "chytr-log-subagent-start",
-      "event": "SubagentStart",
-      "command": "bash .cursor/hooks/chytr-log.sh subagent_start"
-    },
-    {
-      "name": "chytr-log-subagent-stop",
-      "event": "SubagentStop",
-      "command": "bash .cursor/hooks/chytr-log.sh subagent_stop"
-    },
-    {
-      "name": "chytr-stop",
-      "event": "Stop",
-      "command": "bash .cursor/hooks/chytr-stop.sh"
-    }
-  ]
+  "version": 1,
+  "hooks": {
+    "sessionStart": [{ "command": "bash .cursor/hooks/chytr-session.sh" }],
+    "postToolUse": [{ "command": "bash .cursor/hooks/chytr-log.sh tool_call" }],
+    "postToolUseFailure": [{ "command": "bash .cursor/hooks/chytr-log.sh tool_failure" }],
+    "afterShellExecution": [{ "command": "bash .cursor/hooks/chytr-log.sh shell_execution" }],
+    "afterFileEdit": [{ "command": "bash .cursor/hooks/chytr-log.sh file_edit" }],
+    "afterMCPExecution": [{ "command": "bash .cursor/hooks/chytr-log.sh mcp_execution" }],
+    "afterAgentThought": [{ "command": "bash .cursor/hooks/chytr-log.sh agent_thought" }],
+    "afterAgentResponse": [{ "command": "bash .cursor/hooks/chytr-log.sh agent_response" }],
+    "subagentStart": [{ "command": "bash .cursor/hooks/chytr-log.sh subagent_start" }],
+    "subagentStop": [{ "command": "bash .cursor/hooks/chytr-log.sh subagent_stop" }],
+    "sessionEnd": [{ "command": "bash .cursor/hooks/chytr-stop.sh" }],
+    "stop": [{ "command": "bash .cursor/hooks/chytr-stop.sh" }]
+  }
 }
