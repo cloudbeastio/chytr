@@ -18,9 +18,11 @@ import {
   Square,
   Coins,
 } from 'lucide-react'
+import { WorkOrderActions } from '@/components/work-orders/work-order-actions'
 import type { WorkOrder, AgentLog, WorkOrderStatus, WorkOrderSource } from '@/lib/database.types'
 
 const STATUS_CLASSES: Record<WorkOrderStatus, string> = {
+  draft: 'bg-muted text-muted-foreground border-border',
   pending: 'bg-amber-500/15 text-amber-400 border-amber-500/30',
   running: 'bg-blue-500/15 text-blue-400 border-blue-500/30',
   completed: 'bg-green-500/15 text-green-400 border-green-500/30',
@@ -29,6 +31,7 @@ const STATUS_CLASSES: Record<WorkOrderStatus, string> = {
 }
 
 const STATUS_LABELS: Record<WorkOrderStatus, string> = {
+  draft: 'Draft',
   pending: 'Pending',
   running: 'Running',
   completed: 'Completed',
@@ -219,6 +222,7 @@ export default async function WorkOrderDetailPage({ params }: PageProps) {
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
+            <WorkOrderActions workOrderId={id} status={wo.status} />
             <Badge
               variant="outline"
               className={cn('text-xs px-2', SOURCE_CLASSES[wo.source])}

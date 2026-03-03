@@ -1,0 +1,18 @@
+{
+  "name": "chytr",
+  "owner": {
+    "name": "Cloudbeast",
+    "email": ""
+  },
+  "metadata": {
+    "description": "chytr app and Cursor plugin for agent analytics"
+  },
+  "plugins": [
+    {
+      "name": "chytr-analytics",
+      "source": "packages/hooks-skill",
+      "description": "Stream Cursor agent events to chytr for analytics, work-order tracing, and dashboards",
+      "keywords": ["chytr", "analytics", "hooks", "agent", "logging", "work-order"]
+    }
+  ]
+}

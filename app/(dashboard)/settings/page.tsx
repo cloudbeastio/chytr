@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -20,7 +21,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
-import { RefreshCw, CheckCircle, AlertTriangle, Key, Plus, Trash2, Copy, Check } from 'lucide-react'
+import { RefreshCw, CheckCircle, AlertTriangle, Key, Plus, Trash2, Copy, Check, Github } from 'lucide-react'
 import type { LicensePayload } from '@/lib/license'
 
 interface SaveState {
@@ -384,10 +385,50 @@ function LicenseTab() {
 // ─── API Keys Tab ─────────────────────────────────────────────────────────────
 
 function ApiKeysTab() {
+  const searchParams = useSearchParams()
   const [cursorKey, setCursorKey] = useState('')
-  const [githubToken, setGithubToken] = useState('')
   const [cursorState, setCursorState] = useState<SaveState>(IDLE_SAVE)
-  const [githubState, setGithubState] = useState<SaveState>(IDLE_SAVE)
+  const [githubConfigured, setGithubConfigured] = useState(false)
+  const [githubLogin, setGithubLogin] = useState<string | null>(null)
+  const [githubLoading, setGithubLoading] = useState(true)
+  const [githubDisconnecting, setGithubDisconnecting] = useState(false)
+  const [githubMessage, setGithubMessage] = useState<'connected' | 'error' | null>(null)
+
+  useEffect(() => {
+    const gh = searchParams.get('github')
+    if (gh === 'connected' || gh === 'error') {
+      setGithubMessage(gh)
+      window.history.replaceState({}, '', '/settings')
+    }
+  }, [searchParams])
+
+  useEffect(() => {
+    fetch('/api/settings/github-token')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (d && typeof d.configured === 'boolean') {
+          setGithubConfigured(d.configured)
+          setGithubLogin(d.login ?? null)
+        }
+      })
+      .catch(() => {})
+      .finally(() => setGithubLoading(false))
+  }, [])
+
+  async function disconnectGithub() {
+    setGithubDisconnecting(true)
+    try {
+      const res = await fetch('/api/settings/github-token', { method: 'DELETE' })
+      if (res.ok) {
+        setGithubConfigured(false)
+        setGithubLogin(null)
+      }
+    } catch {
+      // ignore
+    } finally {
+      setGithubDisconnecting(false)
+    }
+  }
 
   async function saveCursorKey() {
     setCursorState({ saving: true, success: false, error: null })
@@ -397,17 +438,6 @@ function ApiKeysTab() {
       setTimeout(() => setCursorState(IDLE_SAVE), 3000)
     } catch (err) {
       setCursorState({ saving: false, success: false, error: err instanceof Error ? err.message : 'Error' })
-    }
-  }
-
-  async function saveGithubToken() {
-    setGithubState({ saving: true, success: false, error: null })
-    try {
-      await saveSetting('GITHUB_TOKEN', githubToken)
-      setGithubState({ saving: false, success: true, error: null })
-      setTimeout(() => setGithubState(IDLE_SAVE), 3000)
-    } catch (err) {
-      setGithubState({ saving: false, success: false, error: err instanceof Error ? err.message : 'Error' })
     }
   }
 
@@ -440,26 +470,42 @@ function ApiKeysTab() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">GitHub Token</CardTitle>
-          <CardDescription>Used for repo access and PR creation</CardDescription>
+          <CardTitle className="text-base flex items-center gap-2">
+            <Github className="h-4 w-4" />
+            GitHub
+          </CardTitle>
+          <CardDescription>Connect GitHub to link repos and create agents. Used for repo access.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
-          <div className="space-y-1.5">
-            <Label htmlFor="github-token">GITHUB_TOKEN</Label>
-            <Input
-              id="github-token"
-              type="password"
-              placeholder="ghp_…"
-              value={githubToken}
-              onChange={(e) => setGithubToken(e.target.value)}
-            />
-          </div>
-          <div className="flex items-center gap-3">
-            <Button size="sm" onClick={saveGithubToken} disabled={githubState.saving || !githubToken}>
-              Save
+          {githubMessage === 'connected' && (
+            <p className="text-xs text-green-400 flex items-center gap-1">
+              <CheckCircle className="h-3 w-3" /> Connected successfully.
+            </p>
+          )}
+          {githubMessage === 'error' && (
+            <p className="text-xs text-red-400">GitHub connection failed. Try again.</p>
+          )}
+          {githubLoading ? (
+            <p className="text-sm text-muted-foreground">Loading…</p>
+          ) : githubConfigured ? (
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-sm text-muted-foreground">
+                Connected{githubLogin ? ` as ${githubLogin}` : ''}
+              </p>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={disconnectGithub}
+                disabled={githubDisconnecting}
+              >
+                {githubDisconnecting ? 'Disconnecting…' : 'Disconnect'}
+              </Button>
+            </div>
+          ) : (
+            <Button size="sm" asChild>
+              <a href="/api/auth/github">Connect GitHub</a>
             </Button>
-            <SaveFeedback state={githubState} />
-          </div>
+          )}
         </CardContent>
       </Card>
     </div>

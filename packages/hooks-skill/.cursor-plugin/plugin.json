@@ -1,0 +1,9 @@
+{
+  "name": "chytr-analytics",
+  "version": "1.0.0",
+  "description": "Stream Cursor agent events to chytr for analytics, work-order tracing, and dashboards",
+  "author": { "name": "Cloudbeast" },
+  "repository": "https://github.com/cloudbeastio/chytr",
+  "keywords": ["chytr", "analytics", "hooks", "agent", "logging", "work-order"],
+  "hooks": "hooks/hooks.json"
+}

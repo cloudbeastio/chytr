@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import {
   Dialog,
   DialogContent,
@@ -41,28 +40,10 @@ const STATUS_CONFIG: Record<AgentStatus, { dot: string; label: string }> = {
   error: { dot: 'bg-red-500', label: 'Error' },
 }
 
-const AGENT_TYPES = ['cursor', 'local', 'custom'] as const
-
-interface NewAgentForm {
-  name: string
-  description: string
-  system_prompt: string
-  type: string
-  notification_config: string
-}
-
-const EMPTY_FORM: NewAgentForm = {
-  name: '',
-  description: '',
-  system_prompt: '',
-  type: 'cursor',
-  notification_config: '{}',
-}
-
 export function AgentsRegistry({ agents, statsMap, skillsMap, repoCounts }: AgentsRegistryProps) {
   const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null)
   const [newDialogOpen, setNewDialogOpen] = useState(false)
-  const [form, setForm] = useState<NewAgentForm>(EMPTY_FORM)
+  const [repoUrl, setRepoUrl] = useState('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -84,41 +65,26 @@ export function AgentsRegistry({ agents, statsMap, skillsMap, repoCounts }: Agen
     setDetailSuccess(false)
   }
 
-  async function handleCreate() {
-    if (!form.name.trim()) {
-      setError('Name is required')
+  async function handleLinkRepo() {
+    const url = repoUrl.trim()
+    if (!url) {
+      setError('Enter a GitHub repo URL')
       return
     }
-
-    let notifConfig: unknown = {}
-    try {
-      notifConfig = JSON.parse(form.notification_config || '{}')
-    } catch {
-      setError('Notification config must be valid JSON')
-      return
-    }
-
     setSaving(true)
     setError(null)
     try {
       const res = await fetch('/api/agents', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: form.name.trim(),
-          description: form.description.trim() || null,
-          system_prompt: form.system_prompt.trim() || null,
-          type: form.type,
-          notification_config: notifConfig,
-        }),
+        body: JSON.stringify({ repo_url: url }),
       })
+      const data = await res.json().catch(() => ({}))
       if (!res.ok) {
-        const data = await res.json().catch(() => ({}))
-        throw new Error((data as { error?: string }).error ?? 'Failed to create agent')
+        throw new Error((data as { error?: string }).error ?? 'Failed to link repo')
       }
       setNewDialogOpen(false)
-      setForm(EMPTY_FORM)
-      // Refresh page data
+      setRepoUrl('')
       window.location.reload()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error')
@@ -181,7 +147,7 @@ export function AgentsRegistry({ agents, statsMap, skillsMap, repoCounts }: Agen
         <p className="text-sm text-muted-foreground">{agents.length} registered</p>
         <Button size="sm" onClick={() => setNewDialogOpen(true)}>
           <Plus className="h-3.5 w-3.5 mr-1.5" />
-          New Agent
+          Link repo
         </Button>
       </div>
 
@@ -189,9 +155,9 @@ export function AgentsRegistry({ agents, statsMap, skillsMap, repoCounts }: Agen
       {agents.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 text-center border border-dashed rounded-lg">
           <Bot className="h-8 w-8 text-muted-foreground mb-3" />
-          <p className="text-sm text-muted-foreground">No agents registered yet.</p>
+          <p className="text-sm text-muted-foreground">No agents yet.</p>
           <p className="text-xs text-muted-foreground mt-1">
-            Agents register themselves on first connection.
+            Link a GitHub repo to create an agent.
           </p>
         </div>
       ) : (
@@ -209,78 +175,23 @@ export function AgentsRegistry({ agents, statsMap, skillsMap, repoCounts }: Agen
         </div>
       )}
 
-      {/* New Agent Dialog */}
+      {/* Link GitHub repo dialog */}
       <Dialog open={newDialogOpen} onOpenChange={(o) => { setNewDialogOpen(o); if (!o) setError(null) }}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>Register New Agent</DialogTitle>
+            <DialogTitle>Link GitHub repo</DialogTitle>
           </DialogHeader>
 
           <div className="space-y-4 py-2">
             <div className="space-y-1.5">
-              <Label htmlFor="new-name">
-                Name <span className="text-red-400">*</span>
-              </Label>
+              <Label htmlFor="repo-url">GitHub repo URL</Label>
               <Input
-                id="new-name"
-                placeholder="my-cursor-agent"
-                value={form.name}
-                onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+                id="repo-url"
+                placeholder="https://github.com/owner/repo or owner/repo"
+                value={repoUrl}
+                onChange={(e) => setRepoUrl(e.target.value)}
               />
             </div>
-
-            <div className="space-y-1.5">
-              <Label htmlFor="new-type">Type</Label>
-              <Select
-                value={form.type}
-                onValueChange={(v) => setForm((f) => ({ ...f, type: v }))}
-              >
-                <SelectTrigger id="new-type">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {AGENT_TYPES.map((t) => (
-                    <SelectItem key={t} value={t} className="capitalize">
-                      {t}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-1.5">
-              <Label htmlFor="new-desc">Description</Label>
-              <Input
-                id="new-desc"
-                placeholder="Optional description"
-                value={form.description}
-                onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <Label htmlFor="new-prompt">System Prompt</Label>
-              <Textarea
-                id="new-prompt"
-                placeholder="You are a helpful agent..."
-                rows={4}
-                value={form.system_prompt}
-                onChange={(e) => setForm((f) => ({ ...f, system_prompt: e.target.value }))}
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <Label htmlFor="new-notif">Notification Config (JSON)</Label>
-              <Textarea
-                id="new-notif"
-                placeholder='{"slack_webhook": "https://..."}'
-                rows={3}
-                className="font-mono text-xs"
-                value={form.notification_config}
-                onChange={(e) => setForm((f) => ({ ...f, notification_config: e.target.value }))}
-              />
-            </div>
-
             {error && <p className="text-xs text-red-400">{error}</p>}
           </div>
 
@@ -288,8 +199,8 @@ export function AgentsRegistry({ agents, statsMap, skillsMap, repoCounts }: Agen
             <Button variant="outline" onClick={() => setNewDialogOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={handleCreate} disabled={saving}>
-              {saving ? 'Creating…' : 'Create'}
+            <Button onClick={handleLinkRepo} disabled={saving}>
+              {saving ? 'Linking…' : 'Link repo'}
             </Button>
           </DialogFooter>
         </DialogContent>

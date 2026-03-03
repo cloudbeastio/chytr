@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "hooks": {
+    "sessionStart": [{ "command": "bash ./scripts/chytr-session.sh" }],
+    "postToolUse": [{ "command": "bash ./scripts/chytr-log.sh tool_call" }],
+    "postToolUseFailure": [{ "command": "bash ./scripts/chytr-log.sh tool_failure" }],
+    "afterShellExecution": [{ "command": "bash ./scripts/chytr-log.sh shell_execution" }],
+    "afterFileEdit": [{ "command": "bash ./scripts/chytr-log.sh file_edit" }],
+    "afterMCPExecution": [{ "command": "bash ./scripts/chytr-log.sh mcp_execution" }],
+    "afterAgentThought": [{ "command": "bash ./scripts/chytr-log.sh agent_thought" }],
+    "afterAgentResponse": [{ "command": "bash ./scripts/chytr-log.sh agent_response" }],
+    "subagentStart": [{ "command": "bash ./scripts/chytr-log.sh subagent_start" }],
+    "subagentStop": [{ "command": "bash ./scripts/chytr-log.sh subagent_stop" }],
+    "preCompact": [{ "command": "bash ./scripts/chytr-log.sh preCompact" }],
+    "sessionEnd": [{ "command": "bash ./scripts/chytr-stop.sh" }],
+    "stop": [{ "command": "bash ./scripts/chytr-stop.sh" }]
+  }
+}

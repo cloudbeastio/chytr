@@ -34,6 +34,7 @@ const STATUS_BADGE: Record<
   WorkOrderStatus,
   { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }
 > = {
+  draft: { label: 'Draft', variant: 'secondary' },
   pending: { label: 'Pending', variant: 'secondary' },
   running: { label: 'Running', variant: 'default' },
   completed: { label: 'Completed', variant: 'outline' },
@@ -282,6 +283,7 @@ async function fetchDashboardData(
 
   const pipelineRows = (pipelineRes.data ?? []) as Array<{ status: WorkOrderStatus }>
   const pipeline: Record<WorkOrderStatus, number> = {
+    draft: 0,
     pending: 0,
     running: 0,
     completed: 0,

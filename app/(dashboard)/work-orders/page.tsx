@@ -2,6 +2,7 @@ import { createSupabaseServerClient } from '@/lib/supabase'
 import { Suspense } from 'react'
 import Link from 'next/link'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import {
   Table,
   TableBody,
@@ -12,10 +13,11 @@ import {
 } from '@/components/ui/table'
 import { WorkOrderFilters } from '@/components/work-orders/filters'
 import { cn } from '@/lib/utils'
-import { ClipboardList } from 'lucide-react'
+import { ClipboardList, Plus } from 'lucide-react'
 import type { WorkOrder, WorkOrderStatus, WorkOrderSource } from '@/lib/database.types'
 
 const STATUS_CLASSES: Record<WorkOrderStatus, string> = {
+  draft: 'bg-muted text-muted-foreground border-border',
   pending: 'bg-amber-500/15 text-amber-400 border-amber-500/30',
   running: 'bg-blue-500/15 text-blue-400 border-blue-500/30',
   completed: 'bg-green-500/15 text-green-400 border-green-500/30',
@@ -24,6 +26,7 @@ const STATUS_CLASSES: Record<WorkOrderStatus, string> = {
 }
 
 const STATUS_LABELS: Record<WorkOrderStatus, string> = {
+  draft: 'Draft',
   pending: 'Pending',
   running: 'Running',
   completed: 'Completed',
@@ -267,9 +270,17 @@ export default async function WorkOrdersPage({ searchParams }: PageProps) {
           <h1 className="text-xl font-semibold tracking-tight">Work Orders</h1>
           <p className="text-sm text-muted-foreground mt-0.5">Agent task execution history</p>
         </div>
-        <Suspense fallback={null}>
-          <WorkOrderFilters />
-        </Suspense>
+        <div className="flex items-center gap-3">
+          <Suspense fallback={null}>
+            <WorkOrderFilters />
+          </Suspense>
+          <Button asChild size="sm">
+            <Link href="/work-orders/new">
+              <Plus className="h-3.5 w-3.5 mr-1.5" />
+              New Work Order
+            </Link>
+          </Button>
+        </div>
       </div>
 
       <Suspense

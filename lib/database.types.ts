@@ -20,7 +20,7 @@ export type LogEventType =
   | 'stop'
 
 export type AgentStatus = 'active' | 'idle' | 'offline' | 'error'
-export type WorkOrderStatus = 'pending' | 'running' | 'completed' | 'failed' | 'cancelled'
+export type WorkOrderStatus = 'draft' | 'pending' | 'running' | 'completed' | 'failed' | 'cancelled'
 export type WorkOrderSource = 'cloud' | 'local' | 'job'
 export type ApprovalStatus = 'pending' | 'resolved' | 'expired'
 export type JobRunStatus = 'pending' | 'running' | 'completed' | 'failed'

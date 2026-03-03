@@ -36,32 +36,22 @@ A work order is a structured task definition for a Cursor Cloud Agent.
 
 ## Creating a work order
 
-**Via dashboard**: Click "+ New Work Order" on the Work Orders page.
+**Via dashboard**: Create from Work Orders → New Work Order (saved as **draft**). Edit as needed, then **Approve** to submit to the launch agent API.
 
-**Via API**:
-```bash
-curl -X POST https://your-supabase.supabase.co/rest/v1/work_orders \
-  -H "apikey: your-service-role-key" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "objective": "...",
-    "agent_id": "uuid",
-    "repo_id": "uuid",
-    "source": "cloud"
-  }'
-```
+**Via API**: See [Work Orders API](api-work-orders.md) for full reference. Use `POST /api/v1/work-orders` with `Authorization: Bearer <CHYTR_API_KEY>`. Send `status: "draft"` to create without launching; omit or use `pending` to create and launch.
 
-**Via n8n / Zapier**: Use the Supabase node to INSERT into the `work_orders` table. The DB webhook triggers the agent automatically.
+**Via n8n / Zapier**: Use the Supabase node to INSERT into the `work_orders` table, or call `POST /api/v1/work-orders` with your API key.
 
 ## Work order sources
 
-- `cloud` — created via dashboard, API, or job. Agent launched via Cursor API.
+- `cloud` — created via dashboard, API, or job. Agent launched via Cursor API when approved/non-draft.
 - `local` — auto-created when hooks skill detects a local session. No agent launch, just log capture.
 - `job` — created from a scheduled job template.
 
 ## Status lifecycle
 
-`pending` → `running` → `completed` | `failed` | `cancelled`
+- **draft** — Created from UI or API with `status: "draft"`. Not launched. Approve to move to pending and launch.
+- **pending** → **running** → **completed** | **failed** | **cancelled**
 
 ## Work order lines
 

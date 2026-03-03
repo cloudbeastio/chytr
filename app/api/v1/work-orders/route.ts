@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json()
-    const { objective, agent_id, repo_id, lines, constraints, exploration_hints, verification, branch_name, source, metadata } = body
+    const { objective, agent_id, repo_id, lines, constraints, exploration_hints, verification, branch_name, source, metadata, status: reqStatus } = body
 
     if (!objective && !lines) {
       return NextResponse.json(
@@ -23,6 +23,9 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       )
     }
+
+    const isDraft = reqStatus === 'draft'
+    const status = isDraft ? 'draft' : 'pending'
 
     const supabase = createSupabaseServiceClient()
 
@@ -33,7 +36,7 @@ export async function POST(req: NextRequest) {
         agent_id: agent_id ?? null,
         repo_id: repo_id ?? null,
         source: source ?? 'cloud',
-        status: 'pending',
+        status,
         branch_name: branch_name ?? null,
         lines: lines ?? null,
         constraints: constraints ?? null,
@@ -53,7 +56,7 @@ export async function POST(req: NextRequest) {
     }
 
     let launchResult = null
-    if (workOrder.source !== 'local') {
+    if (!isDraft && workOrder.source !== 'local') {
       launchResult = await launchAgent(workOrder.id)
       if (!launchResult.ok && !launchResult.skipped) {
         console.error('[work-orders/POST] launch error', launchResult.error)
@@ -64,7 +67,7 @@ export async function POST(req: NextRequest) {
       {
         ok: true,
         work_order_id: workOrder.id,
-        status: workOrder.source === 'local' ? 'pending' : (launchResult?.ok ? 'running' : 'pending'),
+        status: isDraft ? 'draft' : (workOrder.source === 'local' ? 'pending' : (launchResult?.ok ? 'running' : 'pending')),
         cursor_agent_id: launchResult?.cursor_agent_id ?? null,
         launch_error: launchResult?.ok ? null : (launchResult?.error ?? null),
       },

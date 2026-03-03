@@ -1,8 +1,16 @@
 # chytr hooks skill
 
-Installs Cursor agent hooks that POST structured log events to a chytr instance. Every tool call, file edit, shell execution, MCP call, agent thought, and session boundary gets captured — tied to a work order ID for full traceability.
+Cursor agent hooks that POST structured log events to a chytr instance. Every tool call, file edit, shell execution, MCP call, agent thought, and session boundary gets captured — tied to a work order ID for full traceability.
 
 ## Install
+
+### From Cursor Marketplace (recommended)
+
+1. Open **Cursor Settings** → **Plugins** (or [cursor.com/marketplace](https://cursor.com/marketplace)).
+2. Search for **chytr-analytics** and install.
+3. Set `CHYTR_URL` and `CHYTR_API_KEY` (see [Environment variables](#environment-variables)). Hooks exit silently if unset.
+
+### Script install (no marketplace)
 
 From the root of any repo:
 
@@ -72,7 +80,8 @@ On `Stop`, the ingest endpoint can return a `followup_message` field which gets 
 | `AfterAgentResponse` | `agent_response` | `chytr-log.sh` |
 | `SubagentStart` | `subagent_start` | `chytr-log.sh` |
 | `SubagentStop` | `subagent_stop` | `chytr-log.sh` |
-| `Stop` | `session_end` | `chytr-stop.sh` |
+| `PreCompact` | `preCompact` | `chytr-log.sh` |
+| `SessionEnd` / `Stop` | `session_end` | `chytr-stop.sh` |
 
 ## Payload structure
 
@@ -112,3 +121,11 @@ chmod +x .cursor/hooks/chytr-log.sh
 chmod +x .cursor/hooks/chytr-session.sh
 chmod +x .cursor/hooks/chytr-stop.sh
 ```
+
+## Publishing to Cursor Marketplace
+
+This package is a Cursor plugin (`.cursor-plugin/plugin.json`, `hooks/hooks.json`, `scripts/`). The chytr repo uses a root-level `.cursor-plugin/marketplace.json` so the plugin is listed as `chytr-analytics` with source `packages/hooks-skill`. To submit:
+
+1. Push plugin changes to the repo.
+2. Go to [cursor.com/marketplace/publish](https://cursor.com/marketplace/publish) and submit the repository URL.
+3. Cursor will discover the plugin via `marketplace.json` and review before listing.

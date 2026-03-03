@@ -12,6 +12,7 @@ import type { WorkOrderStatus, WorkOrderSource } from '@/lib/database.types'
 
 const STATUS_OPTIONS: { value: WorkOrderStatus | 'all'; label: string }[] = [
   { value: 'all', label: 'All statuses' },
+  { value: 'draft', label: 'Draft' },
   { value: 'pending', label: 'Pending' },
   { value: 'running', label: 'Running' },
   { value: 'completed', label: 'Completed' },
