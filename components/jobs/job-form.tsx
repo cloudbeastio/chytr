@@ -22,7 +22,13 @@ import {
 } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
 import { Plus, Trash2 } from 'lucide-react'
-import type { ScheduledJob, Agent, AgentRepo } from '@/lib/database.types'
+import type { ScheduledJob, Agent, AgentRepo, Contract } from '@/lib/database.types'
+
+interface WorkOrderTemplateOption {
+  id: string
+  name: string
+  template: Record<string, unknown>
+}
 
 interface WorkLine {
   title: string
@@ -76,17 +82,29 @@ interface JobFormProps {
   onOpenChange: (open: boolean) => void
   agents: Pick<Agent, 'id' | 'name'>[]
   repos: Pick<AgentRepo, 'id' | 'agent_id' | 'repo_url'>[]
+  contracts?: Pick<Contract, 'id' | 'name'>[] | null
+  templateOptions?: WorkOrderTemplateOption[] | null
   job?: ScheduledJob
   onSuccess: () => void
 }
 
-export function JobForm({ open, onOpenChange, agents, repos, job, onSuccess }: JobFormProps) {
+export function JobForm({
+  open,
+  onOpenChange,
+  agents,
+  repos,
+  contracts = null,
+  templateOptions = null,
+  job,
+  onSuccess,
+}: JobFormProps) {
   const isEdit = !!job
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const [name, setName] = useState('')
   const [cron, setCron] = useState('')
+  const [contractId, setContractId] = useState('')
   const [agentId, setAgentId] = useState('')
   const [repoId, setRepoId] = useState('')
   const [template, setTemplate] = useState<WorkOrderTemplate>({ ...EMPTY_TEMPLATE })
@@ -96,12 +114,14 @@ export function JobForm({ open, onOpenChange, agents, repos, job, onSuccess }: J
       if (job) {
         setName(job.name)
         setCron(job.cron_expression)
+        setContractId(job.contract_id ?? '')
         setAgentId(job.agent_id ?? '')
         setRepoId(job.repo_id ?? '')
         setTemplate(parseTemplate(job.work_order_template))
       } else {
         setName('')
         setCron('')
+        setContractId('')
         setAgentId('')
         setRepoId('')
         setTemplate({ ...EMPTY_TEMPLATE })
@@ -146,6 +166,7 @@ export function JobForm({ open, onOpenChange, agents, repos, job, onSuccess }: J
     const payload = {
       name: name.trim(),
       cron_expression: cron.trim(),
+      contract_id: contractId || null,
       agent_id: agentId || null,
       repo_id: repoId || null,
       work_order_template: {
@@ -204,6 +225,31 @@ export function JobForm({ open, onOpenChange, agents, repos, job, onSuccess }: J
               placeholder="Daily code review"
             />
           </div>
+
+          {/* Contract */}
+          {contracts && contracts.length > 0 && (
+            <div className="space-y-1.5">
+              <Label>Contract</Label>
+              <Select
+                value={contractId || '_none'}
+                onValueChange={(v) => setContractId(v === '_none' ? '' : v)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select contract…" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="_none">
+                    <span className="text-muted-foreground">None</span>
+                  </SelectItem>
+                  {contracts.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>
+                      {c.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
           {/* Cron */}
           <div className="space-y-1.5">
@@ -280,7 +326,33 @@ export function JobForm({ open, onOpenChange, agents, repos, job, onSuccess }: J
 
           {/* Work Order Template */}
           <div className="space-y-4">
-            <p className="text-sm font-medium">Work Order Template</p>
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-medium">Work Order Template</p>
+              {templateOptions && templateOptions.length > 0 && (
+                <Select
+                  value="_none"
+                  onValueChange={(id) => {
+                    if (id === '_none') return
+                    const opt = templateOptions.find((t) => t.id === id)
+                    if (opt) setTemplate(parseTemplate(opt.template))
+                  }}
+                >
+                  <SelectTrigger className="w-48 h-8 text-xs">
+                    <SelectValue placeholder="Load from template…" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="_none">
+                      <span className="text-muted-foreground">Load from template…</span>
+                    </SelectItem>
+                    {templateOptions.map((t) => (
+                      <SelectItem key={t.id} value={t.id}>
+                        {t.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
 
             <div className="space-y-1.5">
               <Label htmlFor="job-objective">Objective</Label>

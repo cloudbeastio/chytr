@@ -5,15 +5,29 @@ import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { JobForm } from '@/components/jobs/job-form'
 import { Play, Pencil } from 'lucide-react'
-import type { ScheduledJob, Agent, AgentRepo } from '@/lib/database.types'
+import type { ScheduledJob, Agent, AgentRepo, Contract } from '@/lib/database.types'
+
+interface TemplateOption {
+  id: string
+  name: string
+  template: Record<string, unknown>
+}
 
 interface JobDetailActionsProps {
   job: ScheduledJob
   agents: Pick<Agent, 'id' | 'name'>[]
   repos: Pick<AgentRepo, 'id' | 'agent_id' | 'repo_url'>[]
+  contracts?: Pick<Contract, 'id' | 'name'>[] | null
+  templateOptions?: TemplateOption[] | null
 }
 
-export function JobDetailActions({ job, agents, repos }: JobDetailActionsProps) {
+export function JobDetailActions({
+  job,
+  agents,
+  repos,
+  contracts = null,
+  templateOptions = null,
+}: JobDetailActionsProps) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [formOpen, setFormOpen] = useState(false)
@@ -53,6 +67,8 @@ export function JobDetailActions({ job, agents, repos }: JobDetailActionsProps) 
         onOpenChange={setFormOpen}
         agents={agents}
         repos={repos}
+        contracts={contracts}
+        templateOptions={templateOptions}
         job={job}
         onSuccess={refresh}
       />

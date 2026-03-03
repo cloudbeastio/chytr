@@ -12,6 +12,7 @@ export async function POST(req: NextRequest) {
       objective,
       agent_id,
       repo_id,
+      contract_id,
       lines,
       constraints,
       exploration_hints,
@@ -37,6 +38,7 @@ export async function POST(req: NextRequest) {
       .from('work_orders')
       .insert({
         user_id: userId,
+        contract_id: contract_id ?? null,
         objective: objective ?? null,
         agent_id: agent_id ?? null,
         repo_id: repo_id ?? null,

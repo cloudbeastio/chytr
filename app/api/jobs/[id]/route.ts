@@ -10,7 +10,7 @@ export async function PATCH(
     const { id } = await params
     const body = await req.json()
     const allowedFields = [
-      'name', 'cron_expression', 'agent_id', 'repo_id',
+      'name', 'cron_expression', 'agent_id', 'repo_id', 'contract_id',
       'work_order_template', 'description', 'enabled',
     ]
 

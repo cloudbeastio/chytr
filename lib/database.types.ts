@@ -24,6 +24,8 @@ export type WorkOrderStatus = 'draft' | 'pending' | 'running' | 'completed' | 'f
 export type WorkOrderSource = 'cloud' | 'local' | 'job'
 export type ApprovalStatus = 'pending' | 'resolved' | 'expired'
 export type JobRunStatus = 'pending' | 'running' | 'completed' | 'failed'
+export type ContractStatus = 'draft' | 'active' | 'paused' | 'closed'
+export type ContractType = 'one_off' | 'master' | 'retainer'
 
 export interface Profile {
   id: string
@@ -34,6 +36,7 @@ export interface Profile {
 export interface WorkOrder {
   id: string
   user_id: string | null
+  contract_id: string | null
   agent_id: string | null
   repo_id: string | null
   source: WorkOrderSource
@@ -44,7 +47,6 @@ export interface WorkOrder {
   pr_url: string | null
   summary: string | null
   error_message: string | null
-  parent_work_order_id: string | null
   tokens_input: number
   tokens_output: number
   total_cost: number
@@ -63,6 +65,37 @@ export interface WorkOrder {
   created_at: string
   updated_at: string
   finished_at: string | null
+}
+
+export interface Contract {
+  id: string
+  user_id: string | null
+  name: string
+  description: string | null
+  type: ContractType
+  status: ContractStatus
+  account_name: string | null
+  account_contact: string | null
+  account_email: string | null
+  account_phone: string | null
+  schedule_config: Json | null
+  budget_limit: number | null
+  is_default: boolean
+  metadata: Json | null
+  created_at: string
+  updated_at: string
+}
+
+export interface WorkOrderTemplate {
+  id: string
+  user_id: string | null
+  contract_id: string | null
+  name: string
+  description: string | null
+  template: Json
+  metadata: Json | null
+  created_at: string
+  updated_at: string
 }
 
 export interface Agent {
@@ -122,6 +155,7 @@ export interface ScheduledJob {
   cron_expression: string
   agent_id: string | null
   repo_id: string | null
+  contract_id: string | null
   work_order_template: Json
   enabled: boolean
   last_run_at: string | null
@@ -204,6 +238,25 @@ export interface SkillStatRow {
   last_used_at: string | null
 }
 
+export interface ContractStatRow {
+  contract_id: string
+  user_id: string | null
+  name: string
+  type: ContractType
+  status: ContractStatus
+  budget_limit: number | null
+  total_work_orders: number
+  completed: number
+  failed: number
+  running: number
+  pending: number
+  draft: number
+  cancelled: number
+  total_cost: number
+  total_tokens_input: number
+  total_tokens_output: number
+}
+
 export interface Database {
   public: {
     Tables: {
@@ -218,11 +271,14 @@ export interface Database {
       approvals: { Row: Approval; Insert: Partial<Approval>; Update: Partial<Approval> }
       instance_config: { Row: InstanceConfig; Insert: Partial<InstanceConfig>; Update: Partial<InstanceConfig> }
       license_keys: { Row: LicenseKey; Insert: Partial<LicenseKey>; Update: Partial<LicenseKey> }
+      contracts: { Row: Contract; Insert: Partial<Contract>; Update: Partial<Contract> }
+      work_order_templates: { Row: WorkOrderTemplate; Insert: Partial<WorkOrderTemplate>; Update: Partial<WorkOrderTemplate> }
     }
     Views: {
       agent_stats: { Row: AgentStatRow }
       tool_stats: { Row: ToolStatRow }
       skill_stats: { Row: SkillStatRow }
+      contract_stats: { Row: ContractStatRow }
     }
     Functions: {
       get_work_order: {
@@ -233,6 +289,11 @@ export interface Database {
           agent_name: string | null
           system_prompt: string | null
           default_config: Json | null
+          contract_id: string | null
+          contract_name: string | null
+          contract_type: ContractType | null
+          contract_status: ContractStatus | null
+          contract_account_name: string | null
         }
       }
       match_knowledge: {

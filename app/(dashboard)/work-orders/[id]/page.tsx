@@ -17,6 +17,7 @@ import {
   CheckSquare,
   Square,
   Coins,
+  FileText,
 } from 'lucide-react'
 import { WorkOrderActions } from '@/components/work-orders/work-order-actions'
 import type { WorkOrder, AgentLog, WorkOrderStatus, WorkOrderSource } from '@/lib/database.types'
@@ -48,6 +49,7 @@ const SOURCE_CLASSES: Record<WorkOrderSource, string> = {
 type WorkOrderDetail = WorkOrder & {
   agents: { name: string } | null
   agent_repos: { repo_url: string } | null
+  contracts: { id: string; name: string } | null
 }
 
 type WorkOrderLine = {
@@ -126,7 +128,7 @@ export default async function WorkOrderDetailPage({ params }: PageProps) {
 
   const { data: woData, error } = await supabase
     .from('work_orders')
-    .select('*, agents!agent_id(name), agent_repos!repo_id(repo_url)')
+    .select('*, agents!agent_id(name), agent_repos!repo_id(repo_url), contracts!contract_id(id, name)')
     .eq('id', id)
     .single()
 
@@ -176,6 +178,15 @@ export default async function WorkOrderDetailPage({ params }: PageProps) {
               {wo.objective ?? <span className="text-muted-foreground italic">No objective</span>}
             </h1>
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2 text-xs text-muted-foreground">
+              {wo.contracts && (
+                <Link
+                  href={`/contracts/${wo.contracts.id}`}
+                  className="flex items-center gap-1 text-primary hover:underline underline-offset-2"
+                >
+                  <FileText className="h-3.5 w-3.5" />
+                  {wo.contracts.name}
+                </Link>
+              )}
               {wo.agents?.name && (
                 <span className="flex items-center gap-1">
                   <Bot className="h-3.5 w-3.5" />

@@ -60,7 +60,15 @@ export default async function JobDetailPage({ params }: PageProps) {
   if (!rawJob) notFound()
   const job = rawJob as unknown as ScheduledJob
 
-  const [{ data: rawRuns }, { data: rawAgents }, { data: rawRepos }] = await Promise.all([
+  const { data: { user } } = await supabase.auth.getUser()
+
+  const [
+    { data: rawRuns },
+    { data: rawAgents },
+    { data: rawRepos },
+    { data: rawContracts },
+    { data: rawTemplates },
+  ] = await Promise.all([
     supabase
       .from('job_runs')
       .select('*')
@@ -69,11 +77,19 @@ export default async function JobDetailPage({ params }: PageProps) {
       .limit(50),
     supabase.from('agents').select('id, name').order('name'),
     supabase.from('agent_repos').select('id, agent_id, repo_url'),
+    user ? supabase.from('contracts').select('id, name').eq('user_id', user.id).order('name') : Promise.resolve({ data: [] }),
+    user ? supabase.from('work_order_templates').select('id, name, template').eq('user_id', user.id).order('name') : Promise.resolve({ data: [] }),
   ])
 
   const runs = rawRuns as unknown as JobRun[]
   const agents = (rawAgents ?? []) as unknown as Array<{ id: string; name: string }>
   const repos = (rawRepos ?? []) as unknown as Array<{ id: string; agent_id: string | null; repo_url: string }>
+  const contracts = (rawContracts ?? []) as unknown as Array<{ id: string; name: string }>
+  const templateOptions = (rawTemplates ?? []).map((t: { id: string; name: string; template: unknown }) => ({
+    id: t.id,
+    name: t.name,
+    template: t.template as Record<string, unknown>,
+  }))
 
   const agentName = agents.find((a) => a.id === job.agent_id)?.name ?? null
   const repoUrl = repos.find((r) => r.id === job.repo_id)?.repo_url ?? null
@@ -99,6 +115,8 @@ export default async function JobDetailPage({ params }: PageProps) {
           job={job}
           agents={(agents ?? []) as { id: string; name: string }[]}
           repos={(repos ?? []) as { id: string; agent_id: string | null; repo_url: string }[]}
+          contracts={contracts}
+          templateOptions={templateOptions}
         />
       </div>
 

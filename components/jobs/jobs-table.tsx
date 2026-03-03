@@ -25,7 +25,13 @@ import { JobForm } from '@/components/jobs/job-form'
 import { Plus, MoreHorizontal, Play, Pencil, Trash2 } from 'lucide-react'
 import type { JobRunStatus } from '@/lib/database.types'
 import type { JobWithData } from '@/app/(dashboard)/jobs/page'
-import type { Agent, AgentRepo } from '@/lib/database.types'
+import type { Agent, AgentRepo, Contract } from '@/lib/database.types'
+
+interface TemplateOption {
+  id: string
+  name: string
+  template: Record<string, unknown>
+}
 import { cn } from '@/lib/utils'
 
 const RUN_STATUS_BADGE: Record<
@@ -92,9 +98,11 @@ interface JobsTableProps {
   jobs: JobWithData[]
   agents: Pick<Agent, 'id' | 'name'>[]
   repos: Pick<AgentRepo, 'id' | 'agent_id' | 'repo_url'>[]
+  contracts?: Pick<Contract, 'id' | 'name'>[] | null
+  templateOptions?: TemplateOption[] | null
 }
 
-export function JobsTable({ jobs, agents, repos }: JobsTableProps) {
+export function JobsTable({ jobs, agents, repos, contracts = null, templateOptions = null }: JobsTableProps) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [formOpen, setFormOpen] = useState(false)
@@ -276,6 +284,8 @@ export function JobsTable({ jobs, agents, repos }: JobsTableProps) {
         onOpenChange={handleFormClose}
         agents={agents}
         repos={repos}
+        contracts={contracts}
+        templateOptions={templateOptions}
         job={editJob ?? undefined}
         onSuccess={refresh}
       />

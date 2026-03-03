@@ -14,6 +14,7 @@ import {
   Brain,
   Lock,
   GitBranch,
+  FileText,
 } from 'lucide-react'
 import type { WorkOrderStatus, AgentStatus } from '@/lib/database.types'
 import {
@@ -114,6 +115,8 @@ interface DashboardData {
     error_message: string | null
     duration_ms: number | null
   }>
+  contractCount: number
+  topContractsBySpend: Array<{ name: string; value: number }>
 }
 
 async function fetchDashboardData(
@@ -121,6 +124,7 @@ async function fetchDashboardData(
   end: Date
 ): Promise<DashboardData> {
   const supabase = await createSupabaseServerClient()
+  const { data: { user } } = await supabase.auth.getUser()
   const startStr = start.toISOString()
   const endStr = end.toISOString()
 
@@ -150,6 +154,8 @@ async function fetchDashboardData(
     agentReposRes,
     sessionStartRes,
     approvalsWaitRes,
+    contractsCountRes,
+    contractStatsRes,
   ] = await Promise.all([
     supabase
       .from('work_orders')
@@ -275,6 +281,12 @@ async function fetchDashboardData(
       .not('decided_at', 'is', null)
       .gte('created_at', startStr)
       .lte('created_at', endStr),
+    user
+      ? supabase.from('contracts').select('*', { count: 'exact', head: true }).eq('user_id', user.id)
+      : Promise.resolve({ count: 0, data: null }),
+    user
+      ? supabase.from('contract_stats').select('contract_id, name, total_cost').eq('user_id', user.id)
+      : Promise.resolve({ data: [] }),
   ])
 
   const license = licenseRes ?? null
@@ -595,6 +607,16 @@ async function fetchDashboardData(
     .map(([name, value]) => ({ name, value }))
   const mcpVsOtherTools = { mcp: mcpCount, other: toolCallCount }
 
+  const contractStatsRows = (contractStatsRes.data ?? []) as Array<{
+    contract_id: string
+    name: string
+    total_cost: number
+  }>
+  const topContractsBySpend = contractStatsRows
+    .sort((a, b) => Number(b.total_cost) - Number(a.total_cost))
+    .slice(0, 5)
+    .map((r) => ({ name: r.name, value: Math.round(Number(r.total_cost) * 10000) / 10000 }))
+
   const recentRows = (recentRes.data ?? []) as Array<{
     id: string
     objective: string | null
@@ -655,6 +677,8 @@ async function fetchDashboardData(
     topSubagentTypes,
     mcpVsOtherTools,
     recentWorkOrders,
+    contractCount: contractsCountRes.count ?? 0,
+    topContractsBySpend,
   }
 }
 
@@ -808,6 +832,12 @@ async function DashboardContent({ range, from, to }: DashboardContentProps) {
       description: 'Awaiting review',
     },
     {
+      label: 'Contracts',
+      value: data.contractCount,
+      icon: FileText,
+      description: 'Total contracts',
+    },
+    {
       label: 'Knowledge learned',
       value: data.knowledgeCount,
       icon: Brain,
@@ -868,6 +898,7 @@ async function DashboardContent({ range, from, to }: DashboardContentProps) {
           topCommands={data.topCommands}
           topModels={data.modelBreakdown}
           topCostRepos={data.costPerRepo}
+          topCostContracts={data.topContractsBySpend}
         />
       </div>
 

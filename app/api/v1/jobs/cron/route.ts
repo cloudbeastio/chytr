@@ -48,6 +48,8 @@ export async function POST(req: NextRequest) {
     const { data: workOrder, error: woError } = await supabase
       .from('work_orders')
       .insert({
+        user_id: job.user_id ?? null,
+        contract_id: job.contract_id ?? null,
         agent_id: job.agent_id,
         repo_id: job.repo_id,
         source: 'job',

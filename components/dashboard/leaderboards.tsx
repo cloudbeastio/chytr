@@ -67,6 +67,7 @@ interface LeaderboardsProps {
   topCommands: LeaderEntry[]
   topModels?: LeaderEntry[]
   topCostRepos?: LeaderEntry[]
+  topCostContracts?: LeaderEntry[]
 }
 
 export function Leaderboards({
@@ -77,6 +78,7 @@ export function Leaderboards({
   topCommands,
   topModels = [],
   topCostRepos = [],
+  topCostContracts = [],
 }: LeaderboardsProps) {
   const empty =
     !topRepos.length &&
@@ -85,7 +87,8 @@ export function Leaderboards({
     !topSkills.length &&
     !topCommands.length &&
     !topModels.length &&
-    !topCostRepos.length
+    !topCostRepos.length &&
+    !topCostContracts.length
 
   return (
     <Card className="w-full">
@@ -104,6 +107,9 @@ export function Leaderboards({
             )}
             {topCostRepos.length > 0 && (
               <LeaderList title="Cost by repo" entries={topCostRepos} unit="$" />
+            )}
+            {topCostContracts.length > 0 && (
+              <LeaderList title="Cost by contract" entries={topCostContracts} unit="$" />
             )}
             <LeaderList title="Top 5 repos (by logs)" entries={topRepos} unit="logs" />
             <LeaderList title="Top 5 agent actions" entries={topAgentActions} unit="events" />

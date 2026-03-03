@@ -39,6 +39,8 @@ export async function POST(
     const { data: workOrder, error: woError } = await supabase
       .from('work_orders')
       .insert({
+        user_id: job.user_id ?? null,
+        contract_id: job.contract_id ?? null,
         agent_id: job.agent_id ?? null,
         repo_id: job.repo_id ?? null,
         source: 'job',

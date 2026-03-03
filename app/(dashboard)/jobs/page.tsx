@@ -3,7 +3,8 @@ import { FeatureGate } from '@/components/license/feature-gate'
 import { JobsTable } from '@/components/jobs/jobs-table'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Suspense } from 'react'
-import type { ScheduledJob, JobRun, Agent, AgentRepo } from '@/lib/database.types'
+import type { ScheduledJob, JobRun, Agent, AgentRepo, Contract } from '@/lib/database.types'
+import type { WorkOrderTemplate } from '@/lib/database.types'
 
 export interface JobWithData extends ScheduledJob {
   latestRun: JobRun | null
@@ -14,15 +15,31 @@ export interface JobWithData extends ScheduledJob {
 async function JobsContent() {
   const supabase = await createSupabaseServerClient()
 
-  const [{ data: rawJobs }, { data: rawAgents }, { data: rawRepos }] = await Promise.all([
+  const { data: { user } } = await supabase.auth.getUser()
+
+  const [
+    { data: rawJobs },
+    { data: rawAgents },
+    { data: rawRepos },
+    { data: rawContracts },
+    { data: rawTemplates },
+  ] = await Promise.all([
     supabase.from('scheduled_jobs').select('*').order('created_at', { ascending: false }),
     supabase.from('agents').select('id, name').order('name'),
     supabase.from('agent_repos').select('id, agent_id, repo_url'),
+    user ? supabase.from('contracts').select('id, name').eq('user_id', user.id).order('name') : Promise.resolve({ data: [] }),
+    user ? supabase.from('work_order_templates').select('id, name, template').eq('user_id', user.id).order('name') : Promise.resolve({ data: [] }),
   ])
 
   const jobs = (rawJobs ?? []) as unknown as ScheduledJob[]
   const agents = (rawAgents ?? []) as unknown as Pick<Agent, 'id' | 'name'>[]
   const repos = (rawRepos ?? []) as unknown as Pick<AgentRepo, 'id' | 'agent_id' | 'repo_url'>[]
+  const contracts = (rawContracts ?? []) as unknown as Pick<Contract, 'id' | 'name'>[]
+  const templateOptions = (rawTemplates ?? []).map((t) => ({
+    id: (t as WorkOrderTemplate).id,
+    name: (t as WorkOrderTemplate).name,
+    template: (t as WorkOrderTemplate).template as Record<string, unknown>,
+  }))
 
   const jobIds = jobs.map((j) => j.id)
   const { data: rawRuns } = jobIds.length
@@ -58,6 +75,8 @@ async function JobsContent() {
       jobs={jobsWithData}
       agents={agents}
       repos={repos}
+      contracts={contracts}
+      templateOptions={templateOptions}
     />
   )
 }

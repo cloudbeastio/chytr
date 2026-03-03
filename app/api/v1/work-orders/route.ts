@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { validateApiKey } from '@/lib/api-auth'
+import { validateApiKey, authenticateApiKey } from '@/lib/api-auth'
 import { createSupabaseServiceClient } from '@/lib/supabase'
 import { loadLicenseFromDB } from '@/lib/license-server'
 import { launchAgent } from '@/lib/services/launch-agent'
@@ -7,6 +7,8 @@ import { launchAgent } from '@/lib/services/launch-agent'
 export async function POST(req: NextRequest) {
   const auth = await validateApiKey(req)
   if (!auth.valid) return auth.response!
+  const apiAuth = await authenticateApiKey(req)
+  if (!apiAuth) return auth.response!
 
   try {
     const license = await loadLicenseFromDB()
@@ -15,7 +17,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json()
-    const { objective, agent_id, repo_id, lines, constraints, exploration_hints, verification, branch_name, source, metadata, status: reqStatus } = body
+    const { objective, agent_id, repo_id, contract_id, lines, constraints, exploration_hints, verification, branch_name, source, metadata, status: reqStatus } = body
 
     if (!objective && !lines) {
       return NextResponse.json(
@@ -32,6 +34,8 @@ export async function POST(req: NextRequest) {
     const { data: workOrder, error: insertError } = await supabase
       .from('work_orders')
       .insert({
+        user_id: apiAuth.userId,
+        contract_id: contract_id ?? null,
         objective: objective ?? null,
         agent_id: agent_id ?? null,
         repo_id: repo_id ?? null,
@@ -92,7 +96,7 @@ export async function GET(req: NextRequest) {
 
     let query = supabase
       .from('work_orders')
-      .select('*, agents!agent_id(name), agent_repos!repo_id(repo_url)')
+      .select('*, agents!agent_id(name), agent_repos!repo_id(repo_url), contracts!contract_id(id, name, type, status)')
       .order('created_at', { ascending: false })
       .limit(limit)
 

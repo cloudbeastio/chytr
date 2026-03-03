@@ -14,9 +14,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Plus, Trash2, ChevronLeft } from 'lucide-react'
+import { Plus, Trash2, ChevronLeft, Save } from 'lucide-react'
 import type { WorkOrder } from '@/lib/database.types'
-import type { Agent, AgentRepo } from '@/lib/database.types'
+import type { Agent, AgentRepo, Contract } from '@/lib/database.types'
 
 export interface WorkLine {
   id?: string
@@ -27,6 +27,7 @@ export interface WorkLine {
 interface WorkOrderFormProps {
   agents: Pick<Agent, 'id' | 'name'>[]
   repos: Pick<AgentRepo, 'id' | 'agent_id' | 'repo_url'>[]
+  contracts?: Pick<Contract, 'id' | 'name' | 'is_default'>[] | null
   workOrder?: WorkOrder | null
   isEdit: boolean
 }
@@ -53,14 +54,17 @@ function parseJsonField(raw: unknown): string {
 export function WorkOrderForm({
   agents,
   repos,
+  contracts = null,
   workOrder,
   isEdit,
 }: WorkOrderFormProps) {
   const router = useRouter()
+  const defaultContractId = contracts?.find((c) => c.is_default)?.id ?? null
   const filteredRepos = workOrder?.agent_id
     ? repos.filter((r) => r.agent_id === workOrder.agent_id)
     : repos
 
+  const [contractId, setContractId] = useState('')
   const [objective, setObjective] = useState('')
   const [agentId, setAgentId] = useState('')
   const [repoId, setRepoId] = useState('')
@@ -70,10 +74,12 @@ export function WorkOrderForm({
   const [explorationHintsJson, setExplorationHintsJson] = useState('')
   const [verificationJson, setVerificationJson] = useState('')
   const [saving, setSaving] = useState(false)
+  const [savingTemplate, setSavingTemplate] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     if (workOrder) {
+      setContractId(workOrder.contract_id ?? '')
       setObjective(workOrder.objective ?? '')
       setAgentId(workOrder.agent_id ?? '')
       setRepoId(workOrder.repo_id ?? '')
@@ -83,6 +89,7 @@ export function WorkOrderForm({
       setExplorationHintsJson(parseJsonField(workOrder.exploration_hints))
       setVerificationJson(parseJsonField(workOrder.verification))
     } else {
+      setContractId(defaultContractId ?? '')
       setObjective('')
       setAgentId('')
       setRepoId('')
@@ -93,7 +100,7 @@ export function WorkOrderForm({
       setVerificationJson('')
     }
     setError(null)
-  }, [workOrder])
+  }, [workOrder, defaultContractId])
 
   const currentRepos = agentId ? repos.filter((r) => r.agent_id === agentId) : repos
 
@@ -147,6 +154,7 @@ export function WorkOrderForm({
     }
 
     const payload = {
+      contract_id: contractId || null,
       objective: objective.trim() || null,
       agent_id: agentId || null,
       repo_id: repoId || null,
@@ -202,6 +210,43 @@ export function WorkOrderForm({
     }
   }
 
+  async function handleSaveAsTemplate() {
+    const constraints = parseOptionalJson(constraintsJson)
+    const exploration_hints = parseOptionalJson(explorationHintsJson)
+    const verification = parseOptionalJson(verificationJson)
+    const name = objective.trim().slice(0, 80) || 'Work order template'
+    setSavingTemplate(true)
+    setError(null)
+    try {
+      const res = await fetch('/api/work-order-templates', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name,
+          description: workOrder ? `From work order ${workOrder.id}` : null,
+          contract_id: contractId || null,
+          template: {
+            objective: objective.trim() || null,
+            lines: lines.filter((l) => l.title.trim()),
+            constraints: constraints ?? {},
+            exploration_hints: exploration_hints ?? {},
+            verification: verification ?? {},
+          },
+        }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        setError((data as { error?: string }).error ?? 'Save as template failed')
+        return
+      }
+      router.refresh()
+    } catch {
+      setError('Failed to save template')
+    } finally {
+      setSavingTemplate(false)
+    }
+  }
+
   return (
     <form onSubmit={handleSubmit} className="space-y-6 max-w-2xl">
       <div className="flex items-center gap-2">
@@ -225,6 +270,31 @@ export function WorkOrderForm({
           rows={3}
         />
       </div>
+
+      {contracts && contracts.length > 0 && (
+        <div className="space-y-1.5">
+          <Label>Contract</Label>
+          <Select
+            value={contractId || '_none'}
+            onValueChange={(v) => setContractId(v === '_none' ? '' : v)}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Default contract" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="_none">
+                <span className="text-muted-foreground">Default</span>
+              </SelectItem>
+              {contracts.map((c) => (
+                <SelectItem key={c.id} value={c.id}>
+                  {c.name}
+                  {c.is_default ? ' (default)' : ''}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="space-y-1.5">
@@ -371,9 +441,18 @@ export function WorkOrderForm({
 
       {error && <p className="text-sm text-destructive">{error}</p>}
 
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
         <Button type="submit" disabled={saving}>
           {saving ? 'Saving…' : isEdit ? 'Save' : 'Create draft'}
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          disabled={savingTemplate}
+          onClick={handleSaveAsTemplate}
+        >
+          <Save className="h-3.5 w-3.5 mr-1.5" />
+          {savingTemplate ? 'Saving…' : 'Save as template'}
         </Button>
         <Button type="button" variant="outline" asChild>
           <Link href={workOrder ? `/work-orders/${workOrder.id}` : '/work-orders'}>

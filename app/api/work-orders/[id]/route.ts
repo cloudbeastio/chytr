@@ -6,6 +6,7 @@ const UPDATABLE_FIELDS = [
   'objective',
   'agent_id',
   'repo_id',
+  'contract_id',
   'branch_name',
   'lines',
   'constraints',
