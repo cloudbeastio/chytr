@@ -1,0 +1,117 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { validateApiKey, authenticateApiKey } from '@/lib/api-auth'
+import { createSupabaseServiceClient } from '@/lib/supabase'
+import { loadLicenseFromDB } from '@/lib/license-server'
+import { launchAgent } from '@/lib/services/launch-agent'
+
+export async function POST(req: NextRequest) {
+  const auth = await validateApiKey(req)
+  if (!auth.valid) return auth.response!
+  const apiAuth = await authenticateApiKey(req)
+  if (!apiAuth) return auth.response!
+
+  try {
+    const license = await loadLicenseFromDB()
+    if (!license) {
+      return NextResponse.json({ error: 'No valid license' }, { status: 403 })
+    }
+
+    const body = await req.json()
+    const { objective, agent_id, repo_id, project_id, lines, constraints, exploration_hints, verification, branch_name, source, metadata, status: reqStatus } = body
+
+    if (!objective && !lines) {
+      return NextResponse.json(
+        { error: 'objective or lines required' },
+        { status: 400 }
+      )
+    }
+
+    const isDraft = reqStatus === 'draft'
+    const status = isDraft ? 'draft' : 'pending'
+
+    const supabase = createSupabaseServiceClient()
+
+    const { data: workOrder, error: insertError } = await supabase
+      .from('chyts')
+      .insert({
+        user_id: apiAuth.userId,
+        project_id: project_id ?? null,
+        objective: objective ?? null,
+        agent_id: agent_id ?? null,
+        repo_id: repo_id ?? null,
+        source: source ?? 'cloud',
+        status,
+        branch_name: branch_name ?? null,
+        lines: lines ?? null,
+        constraints: constraints ?? null,
+        exploration_hints: exploration_hints ?? null,
+        verification: verification ?? null,
+        metadata: metadata ?? {},
+      })
+      .select()
+      .single()
+
+    if (insertError || !workOrder) {
+      console.error('[work-orders/POST] insert error', insertError)
+      return NextResponse.json(
+        { error: insertError?.message ?? 'Failed to create work order' },
+        { status: 500 }
+      )
+    }
+
+    let launchResult = null
+    if (!isDraft && workOrder.source !== 'local') {
+      launchResult = await launchAgent(workOrder.id)
+      if (!launchResult.ok && !launchResult.skipped) {
+        console.error('[work-orders/POST] launch error', launchResult.error)
+      }
+    }
+
+    return NextResponse.json(
+      {
+        ok: true,
+        chyt_id: workOrder.id,
+        status: isDraft ? 'draft' : (workOrder.source === 'local' ? 'pending' : (launchResult?.ok ? 'running' : 'pending')),
+        cursor_agent_id: launchResult?.cursor_agent_id ?? null,
+        launch_error: launchResult?.ok ? null : (launchResult?.error ?? null),
+      },
+      { status: 201 }
+    )
+  } catch (err) {
+    console.error('[work-orders/POST] unexpected error', err)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+}
+
+export async function GET(req: NextRequest) {
+  const auth = await validateApiKey(req)
+  if (!auth.valid) return auth.response!
+
+  try {
+    const supabase = createSupabaseServiceClient()
+    const url = new URL(req.url)
+    const status = url.searchParams.get('status')
+    const source = url.searchParams.get('source')
+    const limit = Math.min(parseInt(url.searchParams.get('limit') ?? '50', 10), 200)
+
+    let query = supabase
+      .from('chyts')
+      .select('*, agents!agent_id(name), agent_repos!repo_id(repo_url), projects!project_id(id, name, type, status)')
+      .order('created_at', { ascending: false })
+      .limit(limit)
+
+    if (status) query = query.eq('status', status)
+    if (source) query = query.eq('source', source)
+
+    const { data, error } = await query
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 })
+    }
+
+    return NextResponse.json({ chyts: data ?? [] })
+  } catch (err) {
+    console.error('[work-orders/GET] unexpected error', err)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+}

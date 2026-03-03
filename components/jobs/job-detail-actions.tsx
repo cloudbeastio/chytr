@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { JobForm } from '@/components/jobs/job-form'
 import { Play, Pencil } from 'lucide-react'
-import type { ScheduledJob, Agent, AgentRepo, Contract } from '@/lib/database.types'
+import type { ScheduledJob, Agent, AgentRepo, Project } from '@/lib/database.types'
 
 interface TemplateOption {
   id: string
@@ -17,7 +17,7 @@ interface JobDetailActionsProps {
   job: ScheduledJob
   agents: Pick<Agent, 'id' | 'name'>[]
   repos: Pick<AgentRepo, 'id' | 'agent_id' | 'repo_url'>[]
-  contracts?: Pick<Contract, 'id' | 'name'>[] | null
+  contracts?: Pick<Project, 'id' | 'name'>[] | null
   templateOptions?: TemplateOption[] | null
 }
 

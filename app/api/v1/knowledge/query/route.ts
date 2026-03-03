@@ -15,15 +15,15 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url)
     let query = searchParams.get('query') ?? ''
     const agent_type = searchParams.get('agent_type')
-    const work_order_id = searchParams.get('work_order_id')
+    const chyt_id = searchParams.get('chyt_id')
     const match_count = Math.min(20, Math.max(1, parseInt(searchParams.get('match_count') ?? '5', 10)))
 
-    if (!query && work_order_id) {
+    if (!query && chyt_id) {
       const supabase = createSupabaseServiceClient()
       const { data: wo } = await supabase
-        .from('work_orders')
+        .from('chyts')
         .select('objective')
-        .eq('id', work_order_id)
+        .eq('id', chyt_id)
         .eq('user_id', auth.userId)
         .single()
       query = (wo?.objective as string) ?? ''
@@ -88,23 +88,23 @@ export async function POST(req: NextRequest) {
     const body = (await req.json()) as {
       query?: string
       agent_type?: string
-      work_order_id?: string
+      chyt_id?: string
       match_count?: number
     }
     let query = body.query ?? ''
     const agent_type = body.agent_type ?? null
-    const work_order_id = body.work_order_id
+    const chyt_id = body.chyt_id
     const match_count = Math.min(
       20,
       Math.max(1, typeof body.match_count === 'number' ? body.match_count : 5)
     )
 
-    if (!query && work_order_id) {
+    if (!query && chyt_id) {
       const supabase = createSupabaseServiceClient()
       const { data: wo } = await supabase
-        .from('work_orders')
+        .from('chyts')
         .select('objective')
-        .eq('id', work_order_id)
+        .eq('id', chyt_id)
         .eq('user_id', auth.userId)
         .single()
       query = (wo?.objective as string) ?? ''

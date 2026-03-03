@@ -109,10 +109,10 @@ export function ApprovalsContent({ pending, history }: ApprovalsContentProps) {
                             {a.question}
                           </p>
                           <a
-                            href={`/work-orders/${a.work_order_id}`}
+                            href={`/chyts/${a.chyt_id}`}
                             className="text-xs text-muted-foreground hover:underline"
                           >
-                            {a.work_order_id.slice(0, 8)}…
+                            {a.chyt_id.slice(0, 8)}…
                           </a>
                         </TableCell>
                         <TableCell className="text-sm text-muted-foreground">

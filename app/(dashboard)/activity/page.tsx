@@ -81,7 +81,7 @@ async function ActivityTable() {
 
   const { data, error } = await supabase
     .from('agent_logs')
-    .select('id, work_order_id, agent_id, event_type, payload, sequence_number, source_repo_name, created_at')
+    .select('id, chyt_id, agent_id, event_type, payload, sequence_number, source_repo_name, created_at')
     .order('created_at', { ascending: false }) // descending: newest first
     .limit(200)
 
@@ -128,12 +128,12 @@ async function ActivityTable() {
                 </Badge>
               </TableCell>
               <TableCell>
-                {log.work_order_id ? (
+                {log.chyt_id ? (
                   <Link
-                    href={`/work-orders/${log.work_order_id}`}
+                    href={`/chyts/${log.chyt_id}`}
                     className="text-xs text-primary hover:underline underline-offset-2 font-mono truncate block max-w-[140px]"
                   >
-                    {log.work_order_id.slice(0, 8)}…
+                    {log.chyt_id.slice(0, 8)}…
                   </Link>
                 ) : (
                   <span className="text-xs text-muted-foreground">—</span>

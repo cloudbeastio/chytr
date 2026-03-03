@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
       cron_expression?: string
       agent_id?: string
       repo_id?: string
-      contract_id?: string
+      project_id?: string
       work_order_template?: Record<string, unknown>
       description?: string
     }
@@ -61,7 +61,7 @@ export async function POST(req: NextRequest) {
         cron_expression: body.cron_expression.trim(),
         agent_id: body.agent_id ?? null,
         repo_id: body.repo_id ?? null,
-        contract_id: body.contract_id ?? null,
+        project_id: body.project_id ?? null,
         work_order_template: body.work_order_template ?? {},
         description: body.description ?? null,
         enabled: true,

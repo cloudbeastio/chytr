@@ -7,9 +7,9 @@ import { cn } from '@/lib/utils'
 import type { Agent, AgentStatus } from '@/lib/database.types'
 
 export interface AgentStatsSummary {
-  total_work_orders: number
-  completed_work_orders: number
-  failed_work_orders: number
+  total_chyts: number
+  completed_chyts: number
+  failed_chyts: number
   avg_duration_ms: number | null
   total_tokens_input: number
   total_tokens_output: number
@@ -57,9 +57,9 @@ function formatTimeAgo(dateStr: string | null): string {
 
 export function AgentCard({ agent, stats, skills, repoCount, onSelect }: AgentCardProps) {
   const statusCfg = STATUS_CONFIG[agent.status] ?? STATUS_CONFIG.offline
-  const total = stats?.total_work_orders ?? 0
-  const completed = stats?.completed_work_orders ?? 0
-  const failed = stats?.failed_work_orders ?? 0
+  const total = stats?.total_chyts ?? 0
+  const completed = stats?.completed_chyts ?? 0
+  const failed = stats?.failed_chyts ?? 0
 
   return (
     <Card

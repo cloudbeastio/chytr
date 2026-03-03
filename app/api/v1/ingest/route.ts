@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
 
     const body = (await req.json()) as {
       event_type?: string
-      work_order_id?: string
+      chyt_id?: string
       agent_id?: string
       source_repo?: string
       raw_payload?: Record<string, unknown>
@@ -59,7 +59,7 @@ export async function POST(req: NextRequest) {
 
     const { error: insertError } = await supabase.from('agent_logs').insert({
       user_id: auth.userId,
-      work_order_id: body.work_order_id ?? null,
+      chyt_id: body.chyt_id ?? null,
       agent_id: body.agent_id ?? null,
       event_type: eventTypeForDb,
       payload,
@@ -86,10 +86,10 @@ export async function POST(req: NextRequest) {
     }
 
     let followup_message: string | null = null
-    if (event_type === 'session_end' && body.work_order_id) {
+    if (event_type === 'session_end' && body.chyt_id) {
       followup_message = await checkDefinitionOfDone(
         supabase,
-        body.work_order_id,
+        body.chyt_id,
         payload
       )
 
@@ -104,9 +104,9 @@ export async function POST(req: NextRequest) {
       if (durationMs != null) update.duration_ms = durationMs
 
       await supabase
-        .from('work_orders')
+        .from('chyts')
         .update(update)
-        .eq('id', body.work_order_id)
+        .eq('id', body.chyt_id)
         .eq('user_id', auth.userId)
     }
 

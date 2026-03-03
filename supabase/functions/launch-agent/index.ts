@@ -37,7 +37,7 @@ serve(async (req) => {
       throw new Error('CURSOR_API_KEY not configured')
     }
 
-    const { data: wo } = await supabase.rpc('get_work_order', { p_work_order_id: workOrder.id })
+    const { data: wo } = await supabase.rpc('get_chyt', { p_chyt_id: workOrder.id })
     if (!wo) throw new Error('Work order not found')
 
     const prompt = buildAgentPrompt(wo)
@@ -62,7 +62,7 @@ serve(async (req) => {
 
     const cursorData = await cursorRes.json()
 
-    await supabase.from('work_orders').update({
+    await supabase.from('chyts').update({
       status: 'running',
       cursor_agent_id: cursorData.id ?? cursorData.agent_id,
     }).eq('id', workOrder.id)

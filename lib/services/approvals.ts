@@ -5,7 +5,7 @@ const SLACK_WEBHOOK_URL = process.env.SLACK_WEBHOOK_URL ?? ''
 const CHYTR_PUBLIC_URL = process.env.CHYTR_PUBLIC_URL ?? ''
 
 export interface CreateApprovalInput {
-  work_order_id?: string
+  chyt_id?: string
   agent_id?: string
   question: string
   options?: string[]
@@ -22,7 +22,7 @@ export async function createApproval(input: CreateApprovalInput) {
     }
   }
 
-  const { work_order_id, agent_id, question, options, context } = input
+  const { chyt_id, agent_id, question, options, context } = input
 
   if (!question) {
     return { ok: false, status: 400, error: 'question required' }
@@ -33,7 +33,7 @@ export async function createApproval(input: CreateApprovalInput) {
   const { data: approval, error: insertError } = await supabase
     .from('approvals')
     .insert({
-      work_order_id: work_order_id ?? null,
+      chyt_id: chyt_id ?? null,
       agent_id: agent_id ?? null,
       question,
       options: options ?? [],

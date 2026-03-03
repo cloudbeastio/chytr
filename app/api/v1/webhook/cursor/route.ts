@@ -53,7 +53,7 @@ export async function POST(req: NextRequest) {
     const supabase = createSupabaseServiceClient()
 
     const { data: wo, error: woError } = await supabase
-      .from('work_orders')
+      .from('chyts')
       .select('id, source, metadata')
       .eq('cursor_agent_id', cursorAgentId)
       .single()
@@ -75,7 +75,7 @@ export async function POST(req: NextRequest) {
     if (payload.summary) update.summary = payload.summary
     if (status === 'failed' && payload.summary) update.error_message = payload.summary
 
-    await supabase.from('work_orders').update(update).eq('id', wo.id)
+    await supabase.from('chyts').update(update).eq('id', wo.id)
 
     if (wo.source === 'job' && wo.metadata) {
       const meta = wo.metadata as Record<string, unknown>
@@ -91,7 +91,7 @@ export async function POST(req: NextRequest) {
     }
 
     console.log('[webhook/cursor] updated work order', wo.id, 'status:', status)
-    return NextResponse.json({ ok: true, work_order_id: wo.id, status })
+    return NextResponse.json({ ok: true, chyt_id: wo.id, status })
   } catch (err) {
     console.error('[webhook/cursor] unexpected error', err)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

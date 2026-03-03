@@ -43,9 +43,9 @@ function KnowledgeCard({ entry }: { entry: Knowledge }) {
           <span className="bg-muted/40 rounded px-1.5 py-0.5">{entry.agent_type}</span>
         )}
         <span>Seen {formatTimeAgo(entry.last_seen_at)}</span>
-        {entry.work_order_id && (
+        {entry.chyt_id && (
           <a
-            href={`/work-orders/${entry.work_order_id}`}
+            href={`/chyts/${entry.chyt_id}`}
             className="flex items-center gap-1 hover:text-foreground transition-colors"
             onClick={(e) => e.stopPropagation()}
           >

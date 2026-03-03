@@ -11,18 +11,18 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid or missing API key' }, { status: 401 })
     }
 
-    const body = (await req.json()) as { work_order_id?: string }
-    const work_order_id = body.work_order_id
-    if (!work_order_id) {
-      return NextResponse.json({ error: 'work_order_id required' }, { status: 400 })
+    const body = (await req.json()) as { chyt_id?: string }
+    const chyt_id = body.chyt_id
+    if (!chyt_id) {
+      return NextResponse.json({ error: 'chyt_id required' }, { status: 400 })
     }
 
     const supabase = createSupabaseServiceClient()
 
     const { data: woRow, error: woError } = await supabase
-      .from('work_orders')
+      .from('chyts')
       .select('id, source, user_id')
-      .eq('id', work_order_id)
+      .eq('id', chyt_id)
       .eq('user_id', auth.userId)
       .single()
 
@@ -47,8 +47,8 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    const { data: wo } = await supabase.rpc('get_work_order', {
-      p_work_order_id: work_order_id,
+    const { data: wo } = await supabase.rpc('get_chyt', {
+      p_chyt_id: chyt_id,
     })
     if (!wo) {
       return NextResponse.json({ error: 'Work order not found' }, { status: 404 })
@@ -85,12 +85,12 @@ export async function POST(req: NextRequest) {
     const cursor_agent_id = cursorData.id ?? cursorData.agent_id
 
     await supabase
-      .from('work_orders')
+      .from('chyts')
       .update({
         status: 'running',
         cursor_agent_id: cursor_agent_id ?? null,
       })
-      .eq('id', work_order_id)
+      .eq('id', chyt_id)
       .eq('user_id', auth.userId)
 
     return NextResponse.json({ ok: true, cursor_agent_id })

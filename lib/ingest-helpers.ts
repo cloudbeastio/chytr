@@ -195,7 +195,7 @@ export async function checkDefinitionOfDone(
   _payload: Record<string, unknown>
 ): Promise<string | null> {
   const { data: wo } = await supabase
-    .from('work_orders')
+    .from('chyts')
     .select('lines, verification, objective')
     .eq('id', workOrderId)
     .single()

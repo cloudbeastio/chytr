@@ -9,10 +9,10 @@ serve(async (req) => {
 
   try {
     const body = await req.json()
-    const { work_order_id, cursor_agent_id, status, pr_url, summary, error_message } = body
+    const { chyt_id, cursor_agent_id, status, pr_url, summary, error_message } = body
 
-    if (!work_order_id) {
-      return new Response(JSON.stringify({ error: 'work_order_id required' }), {
+    if (!chyt_id) {
+      return new Response(JSON.stringify({ error: 'chyt_id required' }), {
         status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       })
     }
@@ -41,17 +41,17 @@ serve(async (req) => {
       }
     }
 
-    await supabase.from('work_orders').update(update).eq('id', work_order_id)
+    await supabase.from('chyts').update(update).eq('id', chyt_id)
 
     const { data: wo } = await supabase
-      .from('work_orders')
+      .from('chyts')
       .select('source, metadata, agent_id, objective')
-      .eq('id', work_order_id)
+      .eq('id', chyt_id)
       .single()
 
     const effectiveStatus = status ?? 'completed'
     if (effectiveStatus !== 'failed' && summary) {
-      extractKnowledge(supabase, work_order_id, summary, wo?.agent_id).catch(() => {})
+      extractKnowledge(supabase, chyt_id, summary, wo?.agent_id).catch(() => {})
     }
 
     if (wo?.source === 'job' && wo.metadata) {
@@ -105,7 +105,7 @@ async function extractKnowledge(
       if (agent?.name) agentType = agent.name
     }
     await supabase.functions.invoke('embed', {
-      body: { text: summary, work_order_id: workOrderId, agent_type: agentType },
+      body: { text: summary, chyt_id: workOrderId, agent_type: agentType },
     })
   } catch (e) {
     console.error('extractKnowledge error:', e)

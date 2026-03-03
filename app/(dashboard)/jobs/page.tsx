@@ -3,8 +3,8 @@ import { FeatureGate } from '@/components/license/feature-gate'
 import { JobsTable } from '@/components/jobs/jobs-table'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Suspense } from 'react'
-import type { ScheduledJob, JobRun, Agent, AgentRepo, Contract } from '@/lib/database.types'
-import type { WorkOrderTemplate } from '@/lib/database.types'
+import type { ScheduledJob, JobRun, Agent, AgentRepo, Project } from '@/lib/database.types'
+import type { ChytTemplate } from '@/lib/database.types'
 
 export interface JobWithData extends ScheduledJob {
   latestRun: JobRun | null
@@ -27,18 +27,18 @@ async function JobsContent() {
     supabase.from('scheduled_jobs').select('*').order('created_at', { ascending: false }),
     supabase.from('agents').select('id, name').order('name'),
     supabase.from('agent_repos').select('id, agent_id, repo_url'),
-    user ? supabase.from('contracts').select('id, name').eq('user_id', user.id).order('name') : Promise.resolve({ data: [] }),
-    user ? supabase.from('work_order_templates').select('id, name, template').eq('user_id', user.id).order('name') : Promise.resolve({ data: [] }),
+    user ? supabase.from('projects').select('id, name').eq('user_id', user.id).order('name') : Promise.resolve({ data: [] }),
+    user ? supabase.from('chyt_templates').select('id, name, template').eq('user_id', user.id).order('name') : Promise.resolve({ data: [] }),
   ])
 
   const jobs = (rawJobs ?? []) as unknown as ScheduledJob[]
   const agents = (rawAgents ?? []) as unknown as Pick<Agent, 'id' | 'name'>[]
   const repos = (rawRepos ?? []) as unknown as Pick<AgentRepo, 'id' | 'agent_id' | 'repo_url'>[]
-  const contracts = (rawContracts ?? []) as unknown as Pick<Contract, 'id' | 'name'>[]
+  const contracts = (rawContracts ?? []) as unknown as Pick<Project, 'id' | 'name'>[]
   const templateOptions = (rawTemplates ?? []).map((t) => ({
-    id: (t as WorkOrderTemplate).id,
-    name: (t as WorkOrderTemplate).name,
-    template: (t as WorkOrderTemplate).template as Record<string, unknown>,
+    id: (t as ChytTemplate).id,
+    name: (t as ChytTemplate).name,
+    template: (t as ChytTemplate).template as Record<string, unknown>,
   }))
 
   const jobIds = jobs.map((j) => j.id)

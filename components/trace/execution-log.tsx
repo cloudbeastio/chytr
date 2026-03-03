@@ -393,7 +393,7 @@ export function ExecutionLog({ workOrderId, initialLogs, isRunning }: Props) {
           event: 'INSERT',
           schema: 'public',
           table: 'agent_logs',
-          filter: `work_order_id=eq.${workOrderId}`,
+          filter: `chyt_id=eq.${workOrderId}`,
         },
         (payload) => {
           const newLog = payload.new as AgentLog

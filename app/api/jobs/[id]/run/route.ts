@@ -26,7 +26,7 @@ export async function POST(
     const template = (job.work_order_template ?? {}) as Record<string, unknown>
 
     const { data: workOrder, error: woError } = await supabase
-      .from('work_orders')
+      .from('chyts')
       .insert({
         agent_id: job.agent_id ?? null,
         repo_id: job.repo_id ?? null,
@@ -50,7 +50,7 @@ export async function POST(
     const [{ error: runError }] = await Promise.all([
       supabase.from('job_runs').insert({
         job_id: job.id,
-        work_order_id: workOrder.id,
+        chyt_id: workOrder.id,
         status: 'pending',
         started_at: now,
       }),
@@ -61,7 +61,7 @@ export async function POST(
       console.error('[jobs/run/POST] job run insert error', runError)
     }
 
-    return NextResponse.json({ ok: true, work_order_id: workOrder.id }, { status: 201 })
+    return NextResponse.json({ ok: true, chyt_id: workOrder.id }, { status: 201 })
   } catch (err) {
     console.error('[jobs/run/POST] unexpected error', err)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

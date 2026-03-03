@@ -29,7 +29,7 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
-    const { name, cron_expression, agent_id, repo_id, contract_id, work_order_template, description } = body
+    const { name, cron_expression, agent_id, repo_id, project_id, work_order_template, description } = body
 
     if (!name || typeof name !== 'string') {
       return NextResponse.json({ error: 'name is required' }, { status: 400 })
@@ -50,7 +50,7 @@ export async function POST(req: NextRequest) {
         cron_expression: cron_expression.trim(),
         agent_id: agent_id ?? null,
         repo_id: repo_id ?? null,
-        contract_id: contract_id ?? null,
+        project_id: project_id ?? null,
         work_order_template: work_order_template ?? {},
         description: description ?? null,
         enabled: true,

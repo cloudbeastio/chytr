@@ -97,11 +97,11 @@ export function getTier(): 'free' | 'pro' | 'team' | null {
 }
 
 export const TIER_FEATURES = {
-  free: ['logging', 'dashboard', 'work_orders', 'agents', 'analytics'],
+  free: ['logging', 'dashboard', 'chyts', 'agents', 'analytics'],
   pro: [
     'logging',
     'dashboard',
-    'work_orders',
+    'chyts',
     'agents',
     'analytics',
     'scheduled_jobs',
@@ -111,7 +111,7 @@ export const TIER_FEATURES = {
   team: [
     'logging',
     'dashboard',
-    'work_orders',
+    'chyts',
     'agents',
     'analytics',
     'scheduled_jobs',

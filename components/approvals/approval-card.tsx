@@ -81,10 +81,10 @@ export function ApprovalCard({ approval, onResolved }: ApprovalCardProps) {
             {timeAgo(approval.created_at)}
           </span>
           <a
-            href={`/work-orders/${approval.work_order_id}`}
+            href={`/chyts/${approval.chyt_id}`}
             className="hover:underline underline-offset-2"
           >
-            Work order {approval.work_order_id.slice(0, 8)}…
+            Work order {approval.chyt_id.slice(0, 8)}…
           </a>
           {expiry && (
             <Badge

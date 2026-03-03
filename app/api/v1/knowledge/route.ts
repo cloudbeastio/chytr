@@ -12,12 +12,12 @@ export async function GET(req: NextRequest) {
   try {
     const url = new URL(req.url)
     const query = url.searchParams.get('query') ?? ''
-    const workOrderId = url.searchParams.get('work_order_id') ?? ''
+    const workOrderId = url.searchParams.get('chyt_id') ?? ''
     const agentType = url.searchParams.get('agent_type') ?? ''
 
     const params = new URLSearchParams()
     if (query) params.set('query', query)
-    if (workOrderId) params.set('work_order_id', workOrderId)
+    if (workOrderId) params.set('chyt_id', workOrderId)
     if (agentType) params.set('agent_type', agentType)
 
     const edgeUrl = `${SUPABASE_URL}/functions/v1/query-knowledge?${params.toString()}`

@@ -24,11 +24,11 @@ serve(async (req) => {
     } else {
       query = url.searchParams.get('query') ?? ''
       agent_type = url.searchParams.get('agent_type')
-      const workOrderId = url.searchParams.get('work_order_id')
+      const workOrderId = url.searchParams.get('chyt_id')
       if (workOrderId && !query) {
         const supabase = getServiceClient()
         const { data: wo } = await supabase
-          .from('work_orders')
+          .from('chyts')
           .select('objective')
           .eq('id', workOrderId)
           .single()

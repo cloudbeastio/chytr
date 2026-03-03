@@ -46,7 +46,7 @@ serve(async (req) => {
       .single()
 
     const { data: workOrder, error: woError } = await supabase
-      .from('work_orders')
+      .from('chyts')
       .insert({
         ...template,
         agent_id: job.agent_id,
@@ -62,7 +62,7 @@ serve(async (req) => {
 
     if (jobRun) {
       await supabase.from('job_runs').update({
-        work_order_id: workOrder.id,
+        chyt_id: workOrder.id,
       }).eq('id', jobRun.id)
     }
 
@@ -71,7 +71,7 @@ serve(async (req) => {
     }).eq('id', job_id)
 
     return new Response(
-      JSON.stringify({ ok: true, work_order_id: workOrder.id }),
+      JSON.stringify({ ok: true, chyt_id: workOrder.id }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   } catch (err) {

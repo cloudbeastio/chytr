@@ -9,7 +9,7 @@ serve(async (req) => {
 
   try {
     const body = await req.json()
-    const { work_order_id, agent_id, question, options, context } = body
+    const { chyt_id, agent_id, question, options, context } = body
 
     if (!question) {
       return new Response(JSON.stringify({ error: 'question required' }), {
@@ -30,7 +30,7 @@ serve(async (req) => {
     const { data: approval, error: insertError } = await supabase
       .from('approvals')
       .insert({
-        work_order_id: work_order_id ?? null,
+        chyt_id: chyt_id ?? null,
         agent_id: agent_id ?? null,
         question,
         options: options ?? [],

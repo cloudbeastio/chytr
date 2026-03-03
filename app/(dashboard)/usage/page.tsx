@@ -16,7 +16,7 @@ import { CheckCircle, XCircle } from 'lucide-react'
 const ALL_KNOWN_FEATURES = [
   'logging',
   'dashboard',
-  'work_orders',
+  'chyts',
   'agents',
   'knowledge',
   'scheduled_jobs',
@@ -35,7 +35,7 @@ async function fetchUsageData() {
     supabase.from('knowledge').select('*', { count: 'exact', head: true }),
     loadLicenseFromDB(),
     supabase
-      .from('work_orders')
+      .from('chyts')
       .select('total_cost')
       .gte('created_at', startStr),
   ])

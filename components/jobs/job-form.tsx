@@ -22,9 +22,9 @@ import {
 } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
 import { Plus, Trash2 } from 'lucide-react'
-import type { ScheduledJob, Agent, AgentRepo, Contract } from '@/lib/database.types'
+import type { ScheduledJob, Agent, AgentRepo, Project } from '@/lib/database.types'
 
-interface WorkOrderTemplateOption {
+interface ChytTemplateOption {
   id: string
   name: string
   template: Record<string, unknown>
@@ -35,13 +35,13 @@ interface WorkLine {
   definition_of_done: string
 }
 
-interface WorkOrderTemplate {
+interface ChytTemplate {
   objective: string
   lines: WorkLine[]
   constraints: string
 }
 
-const EMPTY_TEMPLATE: WorkOrderTemplate = {
+const EMPTY_TEMPLATE: ChytTemplate = {
   objective: '',
   lines: [],
   constraints: '',
@@ -56,7 +56,7 @@ function humanCron(expr: string): string {
   }
 }
 
-function parseTemplate(raw: unknown): WorkOrderTemplate {
+function parseTemplate(raw: unknown): ChytTemplate {
   if (!raw || typeof raw !== 'object') return { ...EMPTY_TEMPLATE }
   const t = raw as Record<string, unknown>
   return {
@@ -82,8 +82,8 @@ interface JobFormProps {
   onOpenChange: (open: boolean) => void
   agents: Pick<Agent, 'id' | 'name'>[]
   repos: Pick<AgentRepo, 'id' | 'agent_id' | 'repo_url'>[]
-  contracts?: Pick<Contract, 'id' | 'name'>[] | null
-  templateOptions?: WorkOrderTemplateOption[] | null
+  contracts?: Pick<Project, 'id' | 'name'>[] | null
+  templateOptions?: ChytTemplateOption[] | null
   job?: ScheduledJob
   onSuccess: () => void
 }
@@ -107,14 +107,14 @@ export function JobForm({
   const [contractId, setContractId] = useState('')
   const [agentId, setAgentId] = useState('')
   const [repoId, setRepoId] = useState('')
-  const [template, setTemplate] = useState<WorkOrderTemplate>({ ...EMPTY_TEMPLATE })
+  const [template, setTemplate] = useState<ChytTemplate>({ ...EMPTY_TEMPLATE })
 
   useEffect(() => {
     if (open) {
       if (job) {
         setName(job.name)
         setCron(job.cron_expression)
-        setContractId(job.contract_id ?? '')
+        setContractId(job.project_id ?? '')
         setAgentId(job.agent_id ?? '')
         setRepoId(job.repo_id ?? '')
         setTemplate(parseTemplate(job.work_order_template))
@@ -166,7 +166,7 @@ export function JobForm({
     const payload = {
       name: name.trim(),
       cron_expression: cron.trim(),
-      contract_id: contractId || null,
+      project_id: contractId || null,
       agent_id: agentId || null,
       repo_id: repoId || null,
       work_order_template: {
@@ -226,7 +226,7 @@ export function JobForm({
             />
           </div>
 
-          {/* Contract */}
+          {/* Project */}
           {contracts && contracts.length > 0 && (
             <div className="space-y-1.5">
               <Label>Contract</Label>

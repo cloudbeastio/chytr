@@ -19,8 +19,8 @@ export async function launchAgent(workOrderId: string): Promise<LaunchResult> {
 
   const supabase = createSupabaseServiceClient()
 
-  const { data: wo, error: rpcError } = await supabase.rpc('get_work_order', {
-    p_work_order_id: workOrderId,
+  const { data: wo, error: rpcError } = await supabase.rpc('get_chyt', {
+    p_chyt_id: workOrderId,
   })
 
   if (rpcError || !wo) {
@@ -88,7 +88,7 @@ export async function launchAgent(workOrderId: string): Promise<LaunchResult> {
   const cursorAgentId = String(cursorData.id ?? cursorData.agent_id ?? '')
 
   await supabase
-    .from('work_orders')
+    .from('chyts')
     .update({ status: 'running', cursor_agent_id: cursorAgentId })
     .eq('id', workOrderId)
 

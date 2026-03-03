@@ -77,8 +77,8 @@ export default async function JobDetailPage({ params }: PageProps) {
       .limit(50),
     supabase.from('agents').select('id, name').order('name'),
     supabase.from('agent_repos').select('id, agent_id, repo_url'),
-    user ? supabase.from('contracts').select('id, name').eq('user_id', user.id).order('name') : Promise.resolve({ data: [] }),
-    user ? supabase.from('work_order_templates').select('id, name, template').eq('user_id', user.id).order('name') : Promise.resolve({ data: [] }),
+    user ? supabase.from('projects').select('id, name').eq('user_id', user.id).order('name') : Promise.resolve({ data: [] }),
+    user ? supabase.from('chyt_templates').select('id, name, template').eq('user_id', user.id).order('name') : Promise.resolve({ data: [] }),
   ])
 
   const runs = rawRuns as unknown as JobRun[]
@@ -196,12 +196,12 @@ export default async function JobDetailPage({ params }: PageProps) {
                         {formatDuration(run.started_at, run.finished_at)}
                       </TableCell>
                       <TableCell>
-                        {run.work_order_id ? (
+                        {run.chyt_id ? (
                           <a
-                            href={`/work-orders/${run.work_order_id}`}
+                            href={`/chyts/${run.chyt_id}`}
                             className="text-sm underline underline-offset-2 hover:text-foreground text-muted-foreground"
                           >
-                            {run.work_order_id.slice(0, 8)}…
+                            {run.chyt_id.slice(0, 8)}…
                           </a>
                         ) : (
                           <span className="text-sm text-muted-foreground">—</span>

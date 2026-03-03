@@ -9,7 +9,7 @@ serve(async (req) => {
 
   try {
     const body = await req.json()
-    const { event_type, work_order_id, agent_id, raw_payload } = body
+    const { event_type, chyt_id, agent_id, raw_payload } = body
 
     if (!event_type) {
       return new Response(JSON.stringify({ error: 'event_type required' }), {
@@ -21,7 +21,7 @@ serve(async (req) => {
     const payload = normalizePayload(event_type, raw_payload ?? {})
 
     const { error: insertError } = await supabase.from('agent_logs').insert({
-      work_order_id: work_order_id ?? null,
+      chyt_id: chyt_id ?? null,
       agent_id: agent_id ?? null,
       event_type,
       payload,
@@ -37,14 +37,14 @@ serve(async (req) => {
     }
 
     let followup_message: string | null = null
-    if (event_type === 'session_end' && work_order_id) {
-      followup_message = await checkDefinitionOfDone(supabase, work_order_id, payload)
+    if (event_type === 'session_end' && chyt_id) {
+      followup_message = await checkDefinitionOfDone(supabase, chyt_id, payload)
 
       const status = (raw_payload?.status === 'failed') ? 'failed' : 'completed'
-      await supabase.from('work_orders').update({
+      await supabase.from('chyts').update({
         status,
         finished_at: new Date().toISOString(),
-      }).eq('id', work_order_id)
+      }).eq('id', chyt_id)
     }
 
     return new Response(
@@ -147,7 +147,7 @@ async function checkDefinitionOfDone(
   _payload: Record<string, unknown>
 ): Promise<string | null> {
   const { data: wo } = await supabase
-    .from('work_orders')
+    .from('chyts')
     .select('lines, verification, objective')
     .eq('id', workOrderId)
     .single()

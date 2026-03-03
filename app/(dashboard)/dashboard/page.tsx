@@ -16,7 +16,7 @@ import {
   GitBranch,
   FileText,
 } from 'lucide-react'
-import type { WorkOrderStatus, AgentStatus } from '@/lib/database.types'
+import type { ChytStatus, AgentStatus } from '@/lib/database.types'
 import {
   getBoundsFromRange,
   formatRangeLabel,
@@ -32,7 +32,7 @@ import { FailureReasonsCard } from '@/components/dashboard/failure-reasons-card'
 import { WOVolumeChart } from '@/components/dashboard/wo-volume-chart'
 
 const STATUS_BADGE: Record<
-  WorkOrderStatus,
+  ChytStatus,
   { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }
 > = {
   draft: { label: 'Draft', variant: 'secondary' },
@@ -69,7 +69,7 @@ interface DashboardData {
   knowledgeCount: number
   knowledgeLimit: number
   hasKnowledgeFeature: boolean
-  pipeline: Record<WorkOrderStatus, number>
+  pipeline: Record<ChytStatus, number>
   fleet: Array<{
     id: string
     name: string
@@ -107,7 +107,7 @@ interface DashboardData {
   recentWorkOrders: Array<{
     id: string
     objective: string | null
-    status: WorkOrderStatus
+    status: ChytStatus
     created_at: string
     agent_id: string | null
     agent_name: string | null
@@ -158,7 +158,7 @@ async function fetchDashboardData(
     contractStatsRes,
   ] = await Promise.all([
     supabase
-      .from('work_orders')
+      .from('chyts')
       .select('*', { count: 'exact', head: true })
       .gte('created_at', startStr)
       .lte('created_at', endStr),
@@ -179,14 +179,14 @@ async function fetchDashboardData(
     supabase.from('knowledge').select('*', { count: 'exact', head: true }),
     loadLicenseFromDB(),
     supabase
-      .from('work_orders')
+      .from('chyts')
       .select('status')
       .gte('created_at', startStr)
       .lte('created_at', endStr),
     supabase.from('agent_stats').select('*'),
     supabase.from('agents').select('id, type'),
     supabase
-      .from('work_orders')
+      .from('chyts')
       .select('agent_id')
       .gte('created_at', startStr)
       .lte('created_at', endStr),
@@ -198,12 +198,12 @@ async function fetchDashboardData(
       .lte('created_at', endStr)
       .limit(3000),
     supabase
-      .from('work_orders')
+      .from('chyts')
       .select('tokens_input, tokens_output, total_cost')
       .gte('created_at', startStr)
       .lte('created_at', endStr),
     supabase
-      .from('work_orders')
+      .from('chyts')
       .select(
         'id, objective, status, created_at, agent_id, summary, error_message, duration_ms'
       )
@@ -251,18 +251,18 @@ async function fetchDashboardData(
       .lte('created_at', endStr)
       .limit(2000),
     supabase
-      .from('work_orders')
+      .from('chyts')
       .select('duration_ms')
       .gte('created_at', startStr)
       .lte('created_at', endStr)
       .not('duration_ms', 'is', null),
     supabase
-      .from('work_orders')
+      .from('chyts')
       .select('created_at')
       .gte('created_at', startStr)
       .lte('created_at', endStr),
     supabase
-      .from('work_orders')
+      .from('chyts')
       .select('repo_id, total_cost')
       .gte('created_at', startStr)
       .lte('created_at', endStr)
@@ -282,10 +282,10 @@ async function fetchDashboardData(
       .gte('created_at', startStr)
       .lte('created_at', endStr),
     user
-      ? supabase.from('contracts').select('*', { count: 'exact', head: true }).eq('user_id', user.id)
+      ? supabase.from('projects').select('*', { count: 'exact', head: true }).eq('user_id', user.id)
       : Promise.resolve({ count: 0, data: null }),
     user
-      ? supabase.from('contract_stats').select('contract_id, name, total_cost').eq('user_id', user.id)
+      ? supabase.from('project_stats').select('contract_id, name, total_cost').eq('user_id', user.id)
       : Promise.resolve({ data: [] }),
   ])
 
@@ -293,8 +293,8 @@ async function fetchDashboardData(
   const hasKnowledgeFeature = (license?.features ?? []).includes('knowledge')
   const knowledgeLimit = license?.limits?.knowledge_entries ?? 500
 
-  const pipelineRows = (pipelineRes.data ?? []) as Array<{ status: WorkOrderStatus }>
-  const pipeline: Record<WorkOrderStatus, number> = {
+  const pipelineRows = (pipelineRes.data ?? []) as Array<{ status: ChytStatus }>
+  const pipeline: Record<ChytStatus, number> = {
     draft: 0,
     pending: 0,
     running: 0,
@@ -608,7 +608,7 @@ async function fetchDashboardData(
   const mcpVsOtherTools = { mcp: mcpCount, other: toolCallCount }
 
   const contractStatsRows = (contractStatsRes.data ?? []) as Array<{
-    contract_id: string
+    project_id: string
     name: string
     total_cost: number
   }>
@@ -620,7 +620,7 @@ async function fetchDashboardData(
   const recentRows = (recentRes.data ?? []) as Array<{
     id: string
     objective: string | null
-    status: WorkOrderStatus
+    status: ChytStatus
     created_at: string
     agent_id: string | null
     summary: string | null
@@ -705,7 +705,7 @@ function PipelineBar({
   completionRate,
   sessionEndReasons,
 }: {
-  pipeline: Record<WorkOrderStatus, number>
+  pipeline: Record<ChytStatus, number>
   completionRate: number | null
   sessionEndReasons: Record<string, number>
 }) {
@@ -957,7 +957,7 @@ async function DashboardContent({ range, from, to }: DashboardContentProps) {
                     return (
                       <Link
                         key={wo.id}
-                        href={`/work-orders/${wo.id}`}
+                        href={`/chyts/${wo.id}`}
                         className="flex items-start gap-3 px-6 py-3 hover:bg-muted/50 transition-colors"
                       >
                         <div className="flex-1 min-w-0">

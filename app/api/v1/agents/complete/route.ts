@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body = (await req.json()) as {
-      work_order_id?: string
+      chyt_id?: string
       cursor_agent_id?: string
       status?: string
       pr_url?: string
@@ -21,9 +21,9 @@ export async function POST(req: NextRequest) {
       error_message?: string
     }
 
-    const work_order_id = body.work_order_id
-    if (!work_order_id) {
-      return NextResponse.json({ error: 'work_order_id required' }, { status: 400 })
+    const chyt_id = body.chyt_id
+    if (!chyt_id) {
+      return NextResponse.json({ error: 'chyt_id required' }, { status: 400 })
     }
 
     const supabase = createSupabaseServiceClient()
@@ -56,9 +56,9 @@ export async function POST(req: NextRequest) {
     }
 
     const { error: updateError } = await supabase
-      .from('work_orders')
+      .from('chyts')
       .update(update)
-      .eq('id', work_order_id)
+      .eq('id', chyt_id)
       .eq('user_id', auth.userId)
 
     if (updateError) {
@@ -67,16 +67,16 @@ export async function POST(req: NextRequest) {
     }
 
     const { data: wo } = await supabase
-      .from('work_orders')
+      .from('chyts')
       .select('source, metadata, agent_id')
-      .eq('id', work_order_id)
+      .eq('id', chyt_id)
       .eq('user_id', auth.userId)
       .single()
 
     const effectiveStatus = body.status ?? 'completed'
     if (effectiveStatus !== 'failed' && body.summary) {
       extractKnowledge(
-        work_order_id,
+        chyt_id,
         body.summary,
         (wo as { agent_id?: string })?.agent_id,
         auth.userId
@@ -154,7 +154,7 @@ async function extractKnowledge(
     },
     body: JSON.stringify({
       text: summary,
-      work_order_id: workOrderId,
+      chyt_id: workOrderId,
       agent_type: agentType,
       user_id: userId,
     }),

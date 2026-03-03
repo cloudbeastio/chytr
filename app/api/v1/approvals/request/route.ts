@@ -12,7 +12,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body = (await req.json()) as {
-      work_order_id?: string
+      chyt_id?: string
       agent_id?: string
       question?: string
       options?: string[]
@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
       .from('approvals')
       .insert({
         user_id: auth.userId,
-        work_order_id: body.work_order_id ?? null,
+        chyt_id: body.chyt_id ?? null,
         agent_id: body.agent_id ?? null,
         question: body.question,
         options: body.options ?? [],

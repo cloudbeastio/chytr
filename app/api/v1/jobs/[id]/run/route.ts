@@ -37,10 +37,10 @@ export async function POST(
     }
 
     const { data: workOrder, error: woError } = await supabase
-      .from('work_orders')
+      .from('chyts')
       .insert({
         user_id: job.user_id ?? null,
-        contract_id: job.contract_id ?? null,
+        project_id: job.project_id ?? null,
         agent_id: job.agent_id ?? null,
         repo_id: job.repo_id ?? null,
         source: 'job',
@@ -64,7 +64,7 @@ export async function POST(
     if (jobRun) {
       await supabase
         .from('job_runs')
-        .update({ work_order_id: workOrder.id })
+        .update({ chyt_id: workOrder.id })
         .eq('id', jobRun.id)
     }
 
@@ -81,7 +81,7 @@ export async function POST(
     return NextResponse.json(
       {
         ok: true,
-        work_order_id: workOrder.id,
+        chyt_id: workOrder.id,
         cursor_agent_id: launchResult.cursor_agent_id ?? null,
         launch_error: launchResult.ok ? null : (launchResult.error ?? null),
       },

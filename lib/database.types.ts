@@ -20,12 +20,12 @@ export type LogEventType =
   | 'stop'
 
 export type AgentStatus = 'active' | 'idle' | 'offline' | 'error'
-export type WorkOrderStatus = 'draft' | 'pending' | 'running' | 'completed' | 'failed' | 'cancelled'
-export type WorkOrderSource = 'cloud' | 'local' | 'job'
+export type ChytStatus = 'draft' | 'pending' | 'running' | 'completed' | 'failed' | 'cancelled'
+export type ChytSource = 'cloud' | 'local' | 'job'
 export type ApprovalStatus = 'pending' | 'resolved' | 'expired'
 export type JobRunStatus = 'pending' | 'running' | 'completed' | 'failed'
-export type ContractStatus = 'draft' | 'active' | 'paused' | 'closed'
-export type ContractType = 'one_off' | 'master' | 'retainer'
+export type ProjectStatus = 'draft' | 'active' | 'paused' | 'closed'
+export type ProjectType = 'one_off' | 'master' | 'retainer'
 
 export interface Profile {
   id: string
@@ -33,15 +33,15 @@ export interface Profile {
   created_at: string
 }
 
-export interface WorkOrder {
+export interface Chyt {
   id: string
   user_id: string | null
-  contract_id: string | null
+  project_id: string | null
   agent_id: string | null
   repo_id: string | null
-  source: WorkOrderSource
+  source: ChytSource
   objective: string | null
-  status: WorkOrderStatus
+  status: ChytStatus
   branch_name: string | null
   cursor_agent_id: string | null
   pr_url: string | null
@@ -67,13 +67,13 @@ export interface WorkOrder {
   finished_at: string | null
 }
 
-export interface Contract {
+export interface Project {
   id: string
   user_id: string | null
   name: string
   description: string | null
-  type: ContractType
-  status: ContractStatus
+  type: ProjectType
+  status: ProjectStatus
   account_name: string | null
   account_contact: string | null
   account_email: string | null
@@ -86,10 +86,10 @@ export interface Contract {
   updated_at: string
 }
 
-export interface WorkOrderTemplate {
+export interface ChytTemplate {
   id: string
   user_id: string | null
-  contract_id: string | null
+  project_id: string | null
   name: string
   description: string | null
   template: Json
@@ -125,7 +125,7 @@ export interface AgentRepo {
 
 export interface AgentLog {
   id: string
-  work_order_id: string | null
+  chyt_id: string | null
   agent_id: string | null
   event_type: LogEventType
   payload: Json
@@ -139,7 +139,7 @@ export interface AgentLog {
 
 export interface Knowledge {
   id: string
-  work_order_id: string | null
+  chyt_id: string | null
   agent_type: string | null
   learning: string
   embedding: number[] | null
@@ -155,7 +155,7 @@ export interface ScheduledJob {
   cron_expression: string
   agent_id: string | null
   repo_id: string | null
-  contract_id: string | null
+  project_id: string | null
   work_order_template: Json
   enabled: boolean
   last_run_at: string | null
@@ -167,7 +167,7 @@ export interface ScheduledJob {
 export interface JobRun {
   id: string
   job_id: string
-  work_order_id: string | null
+  chyt_id: string | null
   status: JobRunStatus
   error_message: string | null
   started_at: string
@@ -176,7 +176,7 @@ export interface JobRun {
 
 export interface Approval {
   id: string
-  work_order_id: string
+  chyt_id: string
   agent_id: string | null
   question: string
   context: Json
@@ -238,14 +238,14 @@ export interface SkillStatRow {
   last_used_at: string | null
 }
 
-export interface ContractStatRow {
-  contract_id: string
+export interface ProjectStatRow {
+  project_id: string
   user_id: string | null
   name: string
-  type: ContractType
-  status: ContractStatus
+  type: ProjectType
+  status: ProjectStatus
   budget_limit: number | null
-  total_work_orders: number
+  total_chyts: number
   completed: number
   failed: number
   running: number
@@ -261,7 +261,7 @@ export interface Database {
   public: {
     Tables: {
       profiles: { Row: Profile; Insert: Partial<Profile>; Update: Partial<Profile> }
-      work_orders: { Row: WorkOrder; Insert: Partial<WorkOrder>; Update: Partial<WorkOrder> }
+      chyts: { Row: Chyt; Insert: Partial<Chyt>; Update: Partial<Chyt> }
       agents: { Row: Agent; Insert: Partial<Agent>; Update: Partial<Agent> }
       agent_repos: { Row: AgentRepo; Insert: Partial<AgentRepo>; Update: Partial<AgentRepo> }
       agent_logs: { Row: AgentLog; Insert: Partial<AgentLog>; Update: Partial<AgentLog> }
@@ -271,29 +271,29 @@ export interface Database {
       approvals: { Row: Approval; Insert: Partial<Approval>; Update: Partial<Approval> }
       instance_config: { Row: InstanceConfig; Insert: Partial<InstanceConfig>; Update: Partial<InstanceConfig> }
       license_keys: { Row: LicenseKey; Insert: Partial<LicenseKey>; Update: Partial<LicenseKey> }
-      contracts: { Row: Contract; Insert: Partial<Contract>; Update: Partial<Contract> }
-      work_order_templates: { Row: WorkOrderTemplate; Insert: Partial<WorkOrderTemplate>; Update: Partial<WorkOrderTemplate> }
+      projects: { Row: Project; Insert: Partial<Project>; Update: Partial<Project> }
+      chyt_templates: { Row: ChytTemplate; Insert: Partial<ChytTemplate>; Update: Partial<ChytTemplate> }
     }
     Views: {
       agent_stats: { Row: AgentStatRow }
       tool_stats: { Row: ToolStatRow }
       skill_stats: { Row: SkillStatRow }
-      contract_stats: { Row: ContractStatRow }
+      project_stats: { Row: ProjectStatRow }
     }
     Functions: {
-      get_work_order: {
-        Args: { p_work_order_id: string }
-        Returns: WorkOrder & {
+      get_chyt: {
+        Args: { p_chyt_id: string }
+        Returns: Chyt & {
           repo_url: string
           default_branch: string
           agent_name: string | null
           system_prompt: string | null
           default_config: Json | null
-          contract_id: string | null
-          contract_name: string | null
-          contract_type: ContractType | null
-          contract_status: ContractStatus | null
-          contract_account_name: string | null
+          project_id: string | null
+          project_name: string | null
+          project_type: ProjectType | null
+          project_status: ProjectStatus | null
+          project_account_name: string | null
         }
       }
       match_knowledge: {
@@ -301,7 +301,7 @@ export interface Database {
         Returns: Array<{ id: string; learning: string; frequency: number; last_seen_at: string; similarity: number }>
       }
       upsert_knowledge: {
-        Args: { p_learning: string; p_embedding: number[]; p_work_order_id?: string; p_agent_type?: string; p_similarity_threshold?: number }
+        Args: { p_learning: string; p_embedding: number[]; p_chyt_id?: string; p_agent_type?: string; p_similarity_threshold?: number; p_user_id?: string }
         Returns: string
       }
     }

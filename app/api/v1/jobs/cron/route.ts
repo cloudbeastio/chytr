@@ -46,10 +46,10 @@ export async function POST(req: NextRequest) {
       .single()
 
     const { data: workOrder, error: woError } = await supabase
-      .from('work_orders')
+      .from('chyts')
       .insert({
         user_id: job.user_id ?? null,
-        contract_id: job.contract_id ?? null,
+        project_id: job.project_id ?? null,
         agent_id: job.agent_id,
         repo_id: job.repo_id,
         source: 'job',
@@ -67,7 +67,7 @@ export async function POST(req: NextRequest) {
     if (jobRun) {
       await supabase
         .from('job_runs')
-        .update({ work_order_id: workOrder.id })
+        .update({ chyt_id: workOrder.id })
         .eq('id', jobRun.id)
     }
 
@@ -81,7 +81,7 @@ export async function POST(req: NextRequest) {
       console.error('[v1/jobs/cron] launch error for job', job_id, launchResult.error)
     }
 
-    return NextResponse.json({ ok: true, work_order_id: workOrder.id })
+    return NextResponse.json({ ok: true, chyt_id: workOrder.id })
   } catch (err) {
     console.error('[v1/jobs/cron] unexpected error', err)
     return NextResponse.json({ error: String(err) }, { status: 500 })

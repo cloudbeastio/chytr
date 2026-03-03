@@ -2,7 +2,7 @@ import { createSupabaseServiceClient } from '@/lib/supabase'
 
 export interface IngestEvent {
   event_type: string
-  work_order_id?: string | null
+  chyt_id?: string | null
   agent_id?: string | null
   raw_payload?: Record<string, unknown>
 }
@@ -14,7 +14,7 @@ export interface IngestResult {
 }
 
 export async function ingestLog(event: IngestEvent): Promise<IngestResult> {
-  const { event_type, work_order_id, agent_id, raw_payload } = event
+  const { event_type, chyt_id, agent_id, raw_payload } = event
 
   if (!event_type) {
     return { ok: false, error: 'event_type required' }
@@ -24,7 +24,7 @@ export async function ingestLog(event: IngestEvent): Promise<IngestResult> {
   const payload = normalizePayload(event_type, raw_payload ?? {})
 
   const { error: insertError } = await supabase.from('agent_logs').insert({
-    work_order_id: work_order_id ?? null,
+    chyt_id: chyt_id ?? null,
     agent_id: agent_id ?? null,
     event_type,
     payload,
@@ -40,14 +40,14 @@ export async function ingestLog(event: IngestEvent): Promise<IngestResult> {
   }
 
   let followup_message: string | null = null
-  if (event_type === 'session_end' && work_order_id) {
-    followup_message = await checkDefinitionOfDone(supabase, work_order_id)
+  if (event_type === 'session_end' && chyt_id) {
+    followup_message = await checkDefinitionOfDone(supabase, chyt_id)
 
     const status = raw_payload?.status === 'failed' ? 'failed' : 'completed'
     await supabase
-      .from('work_orders')
+      .from('chyts')
       .update({ status, finished_at: new Date().toISOString() })
-      .eq('id', work_order_id)
+      .eq('id', chyt_id)
   }
 
   return { ok: true, followup_message }
@@ -146,7 +146,7 @@ async function checkDefinitionOfDone(
   workOrderId: string
 ): Promise<string | null> {
   const { data: wo } = await supabase
-    .from('work_orders')
+    .from('chyts')
     .select('lines')
     .eq('id', workOrderId)
     .single()

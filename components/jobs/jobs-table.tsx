@@ -25,7 +25,7 @@ import { JobForm } from '@/components/jobs/job-form'
 import { Plus, MoreHorizontal, Play, Pencil, Trash2 } from 'lucide-react'
 import type { JobRunStatus } from '@/lib/database.types'
 import type { JobWithData } from '@/app/(dashboard)/jobs/page'
-import type { Agent, AgentRepo, Contract } from '@/lib/database.types'
+import type { Agent, AgentRepo, Project } from '@/lib/database.types'
 
 interface TemplateOption {
   id: string
@@ -98,7 +98,7 @@ interface JobsTableProps {
   jobs: JobWithData[]
   agents: Pick<Agent, 'id' | 'name'>[]
   repos: Pick<AgentRepo, 'id' | 'agent_id' | 'repo_url'>[]
-  contracts?: Pick<Contract, 'id' | 'name'>[] | null
+  contracts?: Pick<Project, 'id' | 'name'>[] | null
   templateOptions?: TemplateOption[] | null
 }
 

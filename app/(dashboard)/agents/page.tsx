@@ -7,9 +7,9 @@ import type { AgentStatsSummary } from '@/components/agents/agent-card'
 
 interface RawAgentStats {
   agent_id: string
-  total_work_orders: number
-  completed_work_orders: number
-  failed_work_orders: number
+  total_chyts: number
+  completed_chyts: number
+  failed_chyts: number
   avg_duration_ms: number | null
   total_tokens_input: number
   total_tokens_output: number
