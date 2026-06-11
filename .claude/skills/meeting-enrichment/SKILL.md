@@ -49,7 +49,7 @@ calendar-first: find the event, fetch the recap, create the note.
 
 ## Field-tested realities (read before running)
 
-A live backfill over June 8–10 confirmed three things that change how you run this:
+Live backfills over June 8–10 and all of May confirmed the following, which change how you run this:
 
 1. **Maestro recaps are sparse — content corroboration is the primary engine, not
    a fallback.** Only one of three days had recaps. So for most notes you will be
@@ -68,6 +68,41 @@ A live backfill over June 8–10 confirmed three things that change how you run 
    least one note's apparent date a day early (a June 8 "call with nate" surfaced
    under June 9). Parse the title's day + time first; use `createdTime` only when
    the title carries no time.
+4. **A note's URL usually points at a child *transcript* page, not the database
+   row.** The auto-created meeting note nests the transcript as a child page
+   inside the real DB row, and casual links resolve to that child. After you
+   `fetch`, check the `<ancestor-path>`: only a page whose parent is
+   `parent-data-source` (the Meeting Notes collection) is the enrichable row.
+   If you landed on a child, walk up to the parent row and write there — writing
+   to the child silently no-ops the database properties.
+5. **Empty "mic-on" stubs are real and come in duplicates.** A note whose body is
+   only the blank template (`### Agenda … ### Notes …` with no transcript) is a
+   false trigger or an abandoned recording; they frequently appear 2–3 times
+   within a couple of minutes of each other. Do NOT churn them as Low/No-match
+   review noise. Disposition: `Match Confidence = No match`, no attendees, and
+   mark them VOID delete-candidates — set the title to `⨯ VOID — empty …`, record
+   the reason in `Calendar Match`, and set `Needs Review = off` (the decision is
+   "delete," not "investigate"). The Notion MCP has no hard-delete; VOID-titling
+   lets a human bulk-delete them in the UI. An empty stub with no event is
+   `Personal` unless its day/time clearly sits inside a work block.
+6. **Maestro has a 5-meeting/day free-tier cap — a missing recap does NOT mean a
+   non-Teams meeting.** Once Joe hits 5 recaps in a day, Maestro sends a
+   "You've Hit Your 5-Meeting Limit" email from `maestrolabs.com` and silently
+   stops recapping; the 6th+ Teams meeting then has no recap. So treat "no recap"
+   as "no recap," not as evidence the meeting wasn't on Teams — fall back to
+   content corroboration as usual, and note the cap when a clearly-Teams meeting
+   has none.
+7. **There is no single unified calendar tool in this environment.** Calendar
+   access is split across two MCP servers — a Google server (`list_events` /
+   `list_calendars`) and an MS365/Outlook server (`outlook_calendar_search`). You
+   MUST query BOTH for every note. Judge `Calendar Source` by the event's
+   link/ID (`meet.google.com`/`@google.com` → Google; `teams.microsoft.com`/MS365
+   → Outlook), NOT by which server returned it — Google-Meet invites routinely
+   surface in the Outlook search because Joe's MS365 account holds the invite.
+   Also: `notion-query-meeting-notes` time-range filtering is unreliable
+   (timezone/coverage gaps); prefer an orchestrator-side window query (operators
+   `date_is_on_or_after` / `date_is_before`) and hand each agent an explicit,
+   pre-bucketed note list rather than trusting a per-agent self-query.
 
 ## Operating modes
 - **Daily backfill (start here):** run both directions over a trailing window,
@@ -134,7 +169,11 @@ off.
 For each note where `Enriched` is off:
 
 1. Read `createdTime` and the note's real in-body title/summary (ignore the
-   `@Today HH:MM` placeholder).
+   `@Today HH:MM` placeholder). **If the body is only the blank template** (the
+   `### Agenda … ### Notes …` skeleton with no transcript), treat it as an empty
+   mic-on stub: `Match Confidence = No match`, no attendees, title `⨯ VOID — empty
+   …`, reason in `Calendar Match`, `Needs Review = off`, `Enriched = on`, and stop
+   — do not try to proximity-match it (see reality #5).
 2. Pull events from **both** calendars in `createdTime − 30 min → +90 min`
    (Google/personal + `joe@cloudbeast.io`; MS365/LumenData calendar `Calendar`).
 3. **If the best candidate is a LumenData event, fetch its Maestro recap**

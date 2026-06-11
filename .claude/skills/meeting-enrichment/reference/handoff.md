@@ -20,10 +20,23 @@ match. Flag conflicts/ad-hoc calls for review instead of guessing.
 
 ## Tools you need (load via tool_search if deferred)
 
-- Notion: `notion-search` (filter by `created_date_range`), `notion-fetch`,
-  `notion-update-page`
-- Calendar: `event_search_v0` (pulls BOTH Google + MS365 in one call)
+- Notion: `notion-search`, `notion-fetch`, `notion-update-page`,
+  `notion-query-meeting-notes`
+- Calendar — **two separate servers; query BOTH** (there is no unified
+  `event_search_v0` here): a Google server (`list_events` + `list_calendars`) and
+  an MS365/Outlook server (`outlook_calendar_search`). Judge `Calendar Source` by
+  the event link/ID, not by which server returned it (Google-Meet invites surface
+  in the Outlook search too).
 - MS365: `outlook_email_search` + `read_resource` (for Maestro recaps)
+
+> **Note resolution.** A note URL usually resolves to a child *transcript* page,
+> not the DB row. After `fetch`, walk the `<ancestor-path>` up to the page whose
+> parent is `parent-data-source` and write there — writing to the child no-ops the
+> properties. Use `notion-search` to find the row if needed.
+> **Querying.** `notion-query-meeting-notes` time-range filtering is unreliable
+> (timezone/coverage gaps). Prefer an orchestrator-side window query and hand each
+> agent an explicit, pre-bucketed note list; treat any per-agent self-query as a
+> backstop only (operators: `date_is_on_or_after` / `date_is_before`).
 
 ## The three hard-won rules (these matter)
 
@@ -49,8 +62,19 @@ match. Flag conflicts/ad-hoc calls for review instead of guessing.
   a suggestion.
 - **No match**: no event in the time window (genuine ad-hoc call) → `Needs Review = on`. If the note itself clearly names its participants (e.g. a 1:1), you may
   record them in External Attendees and leave Needs Review off.
+- **Empty stub (VOID)**: body is only the blank `### Agenda … ### Notes …`
+  template (a mic-on false trigger; often 2–3 dupes within minutes). Do NOT
+  proximity-match or push to the review queue. Set `Match Confidence = No match`,
+  no attendees, title `⨯ VOID — empty …`, reason in `Calendar Match`,
+  `Needs Review = off`, `Enriched = on`. Domain `Personal` unless the slot clearly
+  sits in a work block. (No hard-delete in the MCP — VOID-titling lets a human
+  bulk-delete in the UI.)
 - Proximity alone NEVER backfills attendees. A blank field is recoverable; a
   wrong one corrupts Phase 2.
+- A missing Maestro recap is NOT proof a meeting wasn't on Teams: Maestro's
+  free tier caps at **5 recaps/day** (it emails a "5-Meeting Limit" notice from
+  `maestrolabs.com`, then goes silent). On busy days the 6th+ Teams meeting has no
+  recap — fall back to content corroboration and note the cap.
 
 ## Fields to write (via notion-update-page → update_properties)
 

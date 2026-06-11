@@ -35,7 +35,14 @@ Direction B) per `SKILL.md` + `reference/handoff.md`. No sub-agents needed.
 ## 3. Multiple days → one sub-agent per day
 
 If the scope is **more than one day**, spawn one sub-agent (Task tool,
-`general-purpose`) **per day**. Run each sub-agent on **Sonnet** (`model: sonnet`),
+`general-purpose`) **per day** — or, for a large multi-week backfill (e.g. a full
+month), **one sub-agent per week** to keep the agent count manageable (a weekly
+agent runs the same per-day loop across its 5–7 days, processing each day's notes
+then that day's Direction B; days stay independent). Either way: pre-query the
+window at the orchestrator and hand each agent its **explicit, pre-bucketed note
+list** (URLs + createdTime + PDT day) — do not rely on per-agent self-queries
+(`notion-query-meeting-notes` time-filtering is unreliable). Run each sub-agent on
+**Sonnet** (`model: sonnet`),
 not Opus — per-day enrichment is well-scoped, mechanical work, so Sonnet is the
 right cost/latency trade-off; keep the Opus orchestrator only for dispatch and
 aggregation. Days are independent — notes bucket by the local time in their title,
