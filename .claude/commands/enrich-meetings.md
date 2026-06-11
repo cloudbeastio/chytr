@@ -35,10 +35,13 @@ Direction B) per `SKILL.md` + `reference/handoff.md`. No sub-agents needed.
 ## 3. Multiple days → one sub-agent per day
 
 If the scope is **more than one day**, spawn one sub-agent (Task tool,
-`general-purpose`) **per day**. Days are independent — notes bucket by the local
-time in their title, and each day's notes/events are disjoint — so this is safe to
-parallelize. Dispatch in **batches of 3–4 concurrent agents** (multiple Task calls
-in one message) to respect rate limits; process newest → oldest.
+`general-purpose`) **per day**. Run each sub-agent on **Sonnet** (`model: sonnet`),
+not Opus — per-day enrichment is well-scoped, mechanical work, so Sonnet is the
+right cost/latency trade-off; keep the Opus orchestrator only for dispatch and
+aggregation. Days are independent — notes bucket by the local time in their title,
+and each day's notes/events are disjoint — so this is safe to parallelize. Dispatch
+in **batches of 3–4 concurrent agents** (multiple Task calls in one message) to
+respect rate limits; process newest → oldest.
 
 Give each sub-agent this prompt, substituting `{{DAY}}` (e.g. `2026-06-03`) and the
 mode:
