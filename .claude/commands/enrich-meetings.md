@@ -41,8 +41,14 @@ agent runs the same per-day loop across its 5–7 days, processing each day's no
 then that day's Direction B; days stay independent). Either way: pre-query the
 window at the orchestrator and hand each agent its **explicit, pre-bucketed note
 list** (URLs + createdTime + PDT day) — do not rely on per-agent self-queries
-(`notion-query-meeting-notes` time-filtering is unreliable). Run each sub-agent on
-**Sonnet** (`model: sonnet`),
+(`notion-query-meeting-notes` time-filtering is unreliable). **Cap each agent at
+≤ ~20 notes**: if a single day/week exceeds that, split it into day-range agents,
+because a Sonnet agent overflows its context (~25+ heavily-transcribed notes →
+"Prompt is too long"). Tell agents not to read the giant `<transcript>` bodies.
+If an agent silently dies (suspend/overflow), confirm via the real transcript
+file's mtime — `…/subagents/agent-<id>.jsonl`, NOT the 116-byte `.output`
+symlink — and just re-launch it; idempotency (skip already-`Enriched` rows) makes
+re-runs safe and duplicate-free. Run each sub-agent on **Sonnet** (`model: sonnet`),
 not Opus — per-day enrichment is well-scoped, mechanical work, so Sonnet is the
 right cost/latency trade-off; keep the Opus orchestrator only for dispatch and
 aggregation. Days are independent — notes bucket by the local time in their title,

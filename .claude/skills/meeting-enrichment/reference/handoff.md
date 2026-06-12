@@ -34,9 +34,18 @@ match. Flag conflicts/ad-hoc calls for review instead of guessing.
 > parent is `parent-data-source` and write there — writing to the child no-ops the
 > properties. Use `notion-search` to find the row if needed.
 > **Querying.** `notion-query-meeting-notes` time-range filtering is unreliable
-> (timezone/coverage gaps). Prefer an orchestrator-side window query and hand each
-> agent an explicit, pre-bucketed note list; treat any per-agent self-query as a
-> backstop only (operators: `date_is_on_or_after` / `date_is_before`).
+> (timezone/coverage gaps), and it only returns notes where Joe is attendee or
+> creator — so it will NOT show agent-created Direction-B recap notes. Prefer an
+> orchestrator-side window query and hand each agent an explicit, pre-bucketed
+> note list; treat any per-agent self-query as a backstop only (operators:
+> `date_is_on_or_after` / `date_is_before`).
+> **Scale & context.** A single Sonnet day/week agent overflows its context around
+> ~25+ heavily-transcribed notes (seen live: a 29-note week died with "Prompt is
+> too long" at note 22). Two defenses: (1) cap each agent at **≤ ~20 notes** —
+> split a big week into day-range agents; (2) tell agents NOT to read the giant
+> `<transcript>` bodies — the note's properties + summary + in-body title are
+> enough to match. Agents are idempotent (skip already-`Enriched` rows), so a
+> re-run after a crash/suspend resumes cleanly and creates no duplicates.
 
 ## The three hard-won rules (these matter)
 
