@@ -15,10 +15,12 @@ description: >
   attendees", "pull the Maestro recaps", or on schedule. Does NOT scope work
   (Phase 2) or deploy agents (Phase 3).
 compatibility: >
-  Requires the Notion MCP (Meeting Notes DB), the calendar tools
-  (calendar_search_v0, event_search_v0) spanning Google + MS365, and the MS365
+  Requires the Notion MCP (Meeting Notes DB); calendar access via TWO servers
+  queried together — Google (list_events + list_calendars) and MS365/Outlook
+  (outlook_calendar_search) — there is no unified event_search_v0; and the MS365
   MCP (outlook_email_search + read_resource) to fetch Teams Maestro recaps from
-  noreply@maestrolabs.com.
+  noreply@maestrolabs.com. Orchestrated by the /enrich-meetings command, which
+  pulls the unenriched work queue and fans out Sonnet sub-agents at 5 notes each.
 ---
 
 # Meeting Enrichment — Phase 1 (two-way reconciliation)
