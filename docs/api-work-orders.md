@@ -93,7 +93,7 @@ Content-Type: application/json
 ```json
 {
   "ok": true,
-  "work_order_id": "<uuid>",
+  "chyt_id": "<uuid>",
   "status": "draft" | "pending" | "running",
   "cursor_agent_id": "<id>" | null,
   "launch_error": null | "<string>"

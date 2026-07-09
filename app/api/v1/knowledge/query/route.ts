@@ -15,7 +15,8 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url)
     let query = searchParams.get('query') ?? ''
     const agent_type = searchParams.get('agent_type')
-    const chyt_id = searchParams.get('chyt_id')
+    // Back-compat: accept the legacy `work_order_id` param name too.
+    const chyt_id = searchParams.get('chyt_id') ?? searchParams.get('work_order_id')
     const match_count = Math.min(20, Math.max(1, parseInt(searchParams.get('match_count') ?? '5', 10)))
 
     if (!query && chyt_id) {
@@ -89,11 +90,13 @@ export async function POST(req: NextRequest) {
       query?: string
       agent_type?: string
       chyt_id?: string
+      /** @deprecated back-compat: legacy key name */
+      work_order_id?: string
       match_count?: number
     }
     let query = body.query ?? ''
     const agent_type = body.agent_type ?? null
-    const chyt_id = body.chyt_id
+    const chyt_id = body.chyt_id ?? body.work_order_id
     const match_count = Math.min(
       20,
       Math.max(1, typeof body.match_count === 'number' ? body.match_count : 5)

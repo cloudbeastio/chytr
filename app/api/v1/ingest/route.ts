@@ -35,12 +35,17 @@ export async function POST(req: NextRequest) {
     const body = (await req.json()) as {
       event_type?: string
       chyt_id?: string
+      /** @deprecated back-compat: hook scripts historically sent `work_order_id` */
+      work_order_id?: string
       agent_id?: string
       source_repo?: string
       raw_payload?: Record<string, unknown>
     }
 
     const event_type = body.event_type
+    // Back-compat: the API renamed `work_order_id` → `chyt_id`, but already-installed
+    // hook scripts may still send the old key. Accept either so logs aren't orphaned.
+    const chytId = body.chyt_id ?? body.work_order_id ?? null
     if (!event_type || typeof event_type !== 'string') {
       return NextResponse.json({ error: 'event_type required' }, { status: 400 })
     }
@@ -59,7 +64,7 @@ export async function POST(req: NextRequest) {
 
     const { error: insertError } = await supabase.from('agent_logs').insert({
       user_id: auth.userId,
-      chyt_id: body.chyt_id ?? null,
+      chyt_id: chytId,
       agent_id: body.agent_id ?? null,
       event_type: eventTypeForDb,
       payload,
@@ -86,10 +91,10 @@ export async function POST(req: NextRequest) {
     }
 
     let followup_message: string | null = null
-    if (event_type === 'session_end' && body.chyt_id) {
+    if (event_type === 'session_end' && chytId) {
       followup_message = await checkDefinitionOfDone(
         supabase,
-        body.chyt_id,
+        chytId,
         payload
       )
 
@@ -106,7 +111,7 @@ export async function POST(req: NextRequest) {
       await supabase
         .from('chyts')
         .update(update)
-        .eq('id', body.chyt_id)
+        .eq('id', chytId)
         .eq('user_id', auth.userId)
     }
 

@@ -62,7 +62,7 @@ If `CHYTR_URL`/`CHYTR_PUBLIC_URL` or `CHYTR_API_KEY` are not set, all hooks exit
 
 ## How work order IDs work
 
-Set `WORK_ORDER_ID` before starting a session to tie every log event to a specific task. On `SessionStart`, the hooks skill queries `GET /api/v1/knowledge/query?work_order_id=<id>` and injects any returned knowledge as `additional_context` into the agent session — so the agent picks up where the last run left off.
+Set `WORK_ORDER_ID` before starting a session to tie every log event to a specific task. On `SessionStart`, the hooks skill queries `GET /api/v1/knowledge/query?chyt_id=<id>` and injects any returned knowledge as `additional_context` into the agent session — so the agent picks up where the last run left off.
 
 On `Stop`, the ingest endpoint can return a `followup_message` field which gets surfaced back to the agent as a continuation prompt — enabling automatic work order validation and loop-back if the definition of done isn't met.
 
@@ -90,7 +90,7 @@ Every event POSTs to `POST /api/v1/ingest`:
 ```json
 {
   "event_type": "tool_call",
-  "work_order_id": "wo_abc123",
+  "chyt_id": "wo_abc123",
   "agent_id": "agent_xyz",
   "source_repo": "https://github.com/your-org/your-repo",
   "raw_payload": { ...cursor hook payload... }
