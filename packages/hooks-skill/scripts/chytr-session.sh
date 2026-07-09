@@ -45,7 +45,7 @@ RAW_PAYLOAD=$(cat)
 BODY=$(cat <<EOF
 {
   "event_type": "session_start",
-  "work_order_id": $([ -n "$WORK_ORDER_ID" ] && echo "\"$WORK_ORDER_ID\"" || echo "null"),
+  "chyt_id": $([ -n "$WORK_ORDER_ID" ] && echo "\"$WORK_ORDER_ID\"" || echo "null"),
   "agent_id": $([ -n "$CHYTR_AGENT_ID" ] && echo "\"$CHYTR_AGENT_ID\"" || echo "null"),
   "source_repo": $([ -n "$SOURCE_REPO" ] && echo "\"$SOURCE_REPO\"" || echo "null"),
   "raw_payload": $RAW_PAYLOAD
@@ -63,7 +63,7 @@ KNOWLEDGE=""
 if [ -n "$WORK_ORDER_ID" ]; then
   RESP=$(curl -sf --max-time 5 \
     -H "Authorization: Bearer $CHYTR_API_KEY" \
-    "${CHYTR_URL%/}/api/v1/knowledge/query?work_order_id=$WORK_ORDER_ID" 2>/dev/null || echo "{}")
+    "${CHYTR_URL%/}/api/v1/knowledge/query?chyt_id=$WORK_ORDER_ID" 2>/dev/null || echo "{}")
   if command -v jq >/dev/null 2>&1; then
     KNOWLEDGE=$(echo "$RESP" | jq -r '.formatted // ""')
   else
