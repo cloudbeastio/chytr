@@ -27,6 +27,11 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next()
   }
 
+  // MCP JSON-RPC + OAuth discovery: Bearer PAT/JWT checked in-route (not cookie session)
+  if (pathname.startsWith('/api/mcp') || pathname.startsWith('/.well-known/')) {
+    return NextResponse.next()
+  }
+
   let response = NextResponse.next({
     request: { headers: request.headers },
   })

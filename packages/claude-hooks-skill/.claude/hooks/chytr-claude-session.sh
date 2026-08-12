@@ -52,6 +52,9 @@ elif [ -z "$RAW_PAYLOAD" ]; then
   RAW_PAYLOAD="{}"
 fi
 
+# shellcheck source=chytr-correlation.sh
+source "$(cd "$(dirname "${BASH_SOURCE[0]:-.}")" && pwd)/chytr-correlation.sh"
+
 SESSION_ID=""
 if [ "$HAS_JQ" = "1" ]; then
   SESSION_ID=$(printf '%s' "$RAW_PAYLOAD" | jq -r '.session_id // ""' 2>/dev/null || echo "")
@@ -92,6 +95,7 @@ BODY=$(cat <<EOF
   "chyt_id": $([ -n "$CHYT_ID" ] && echo "\"$CHYT_ID\"" || echo "null"),
   "agent_id": $([ -n "$CHYTR_AGENT_ID" ] && echo "\"$CHYTR_AGENT_ID\"" || echo "null"),
   "source_repo": $([ -n "$SOURCE_REPO" ] && echo "\"$SOURCE_REPO\"" || echo "null"),
+  $CORRELATION_JSON_FIELDS,
   "raw_payload": $RAW_PAYLOAD
 }
 EOF

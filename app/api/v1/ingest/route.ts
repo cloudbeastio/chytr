@@ -3,6 +3,7 @@ import { createSupabaseServiceClient } from '@/lib/supabase'
 import { authenticateApiKey } from '@/lib/api-auth'
 import { normalizePayload, checkDefinitionOfDone } from '@/lib/ingest-helpers'
 import { normalizeRepoUrl } from '@/lib/repo-utils'
+import { resolveCbmain, resolveConversationId } from '@/lib/cbmain-contract'
 
 const VALID_EVENT_TYPES = [
   'session_start',
@@ -39,6 +40,11 @@ export async function POST(req: NextRequest) {
       work_order_id?: string
       agent_id?: string
       source_repo?: string
+      /** Runtime run id (bc-… / session_…) — preferred top-level stamp */
+      conversation_id?: string
+      runtime_run_id?: string
+      /** cb-main breadcrumb block (payload.cbmain) */
+      cbmain?: Record<string, unknown>
       raw_payload?: Record<string, unknown>
     }
 
@@ -53,14 +59,30 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid event_type' }, { status: 400 })
     }
 
+    const rawPayload = body.raw_payload ?? {}
+    const conversationId = resolveConversationId({
+      bodyConversationId: body.conversation_id,
+      bodyRuntimeRunId: body.runtime_run_id,
+      rawPayload,
+      envRuntimeRunId: process.env.CHYTR_RUNTIME_RUN_ID ?? null,
+    })
+    const cbmain = resolveCbmain({
+      conversationId,
+      bodyCbmain: body.cbmain,
+      rawPayload,
+      envCbmainJson: process.env.CHYTR_CBMAIN_JSON ?? null,
+    })
+
     const supabase = createSupabaseServiceClient()
-    const payload = normalizePayload(event_type, body.raw_payload ?? {})
+    const payload = normalizePayload(event_type, rawPayload, {
+      conversationId,
+      cbmain,
+    })
     const repo = body.source_repo ? normalizeRepoUrl(body.source_repo) : null
 
     const eventTypeForDb =
       event_type === 'preCompact' ? 'pre_compact' : event_type
     const model = (payload.model as string) ?? null
-    const conversationId = (payload.conversation_id as string) ?? null
 
     const { error: insertError } = await supabase.from('agent_logs').insert({
       user_id: auth.userId,
@@ -115,7 +137,12 @@ export async function POST(req: NextRequest) {
         .eq('user_id', auth.userId)
     }
 
-    return NextResponse.json({ ok: true, followup_message })
+    return NextResponse.json({
+      ok: true,
+      followup_message,
+      conversation_id: conversationId,
+      cbmain_stamped: Boolean(cbmain),
+    })
   } catch (err) {
     console.error('[v1/ingest]', err)
     return NextResponse.json(

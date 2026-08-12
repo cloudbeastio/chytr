@@ -48,12 +48,16 @@ fi
 
 RAW_PAYLOAD=$(cat)
 
+# shellcheck source=chytr-correlation.sh
+source "$(cd "$(dirname "${BASH_SOURCE[0]:-.}")" && pwd)/chytr-correlation.sh"
+
 BODY=$(cat <<EOF
 {
   "event_type": "$EVENT_TYPE",
   "chyt_id": $([ -n "$WORK_ORDER_ID" ] && echo "\"$WORK_ORDER_ID\"" || echo "null"),
   "agent_id": $([ -n "$CHYTR_AGENT_ID" ] && echo "\"$CHYTR_AGENT_ID\"" || echo "null"),
   "source_repo": $([ -n "$SOURCE_REPO" ] && echo "\"$SOURCE_REPO\"" || echo "null"),
+  $CORRELATION_JSON_FIELDS,
   "raw_payload": $RAW_PAYLOAD
 }
 EOF

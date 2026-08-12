@@ -125,6 +125,7 @@ export interface AgentRepo {
 
 export interface AgentLog {
   id: string
+  user_id?: string | null
   chyt_id: string | null
   agent_id: string | null
   event_type: LogEventType
@@ -135,6 +136,19 @@ export interface AgentLog {
   model: string | null
   conversation_id: string | null
   created_at: string
+}
+
+export interface McpAuditLog {
+  id: string
+  created_at: string
+  user_id: string | null
+  api_key_id: string | null
+  auth_kind: 'pat' | 'oauth'
+  tool: string
+  args_hash: string | null
+  status: 'ok' | 'error'
+  duration_ms: number | null
+  error: string | null
 }
 
 export interface Knowledge {
