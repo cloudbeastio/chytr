@@ -1,6 +1,7 @@
 # Agent execution linkage (cb-main ↔ chytr)
 
-**Status:** implemented on this branch (P1b ingest + P2 read MCP). Design SoT:
+**Status:** P1b+P2 shipped (PR #10). Correlation bridge (file + work_set_session) on
+`cursor/chytr-correlation-bridge-b396`. Design SoT:
 `cloudbeastio/cb-wiki-2` → `agent-outputs/architecture/2026-08-12_chytr-workitem-linkage-and-query.md`.
 
 ## Contract (P0)
@@ -12,6 +13,23 @@
 | chytr | `agent_logs.payload.cbmain` | Breadcrumbs only (work_item/task/project/repo/branch/session_url/lane) |
 
 No data copy. cb-main owns work identity; chytr owns execution logs.
+
+**Do not** use Claude Code's raw UUID `session_id` as the join key unless it equals a
+cb-main-stamped `session_…` / `bc-…` value.
+
+## Join path (clean)
+
+1. Agent calls `work_set_session(work_item_id, session_url=…)` on cb-main MCP.
+2. MCP parses `bc-…` / `session_…` from the URL, stamps `ops.work_items.chyt_id`, returns
+   `chytr_correlation` (`write_path`, `write_json`).
+3. Agent writes that JSON to **`.chytr/correlation.json`** (gitignored) — helper:
+   `scripts/chytr-stamp-correlation.sh` (wiki) / `packages/hooks-skill/scripts/chytr-stamp-correlation.sh`.
+4. Hooks source `chytr-correlation.sh` which prefers:
+   - env `CHYTR_RUNTIME_RUN_ID` / `CHYTR_CBMAIN_JSON` (optional override)
+   - else **`.chytr/correlation.json`**
+   - else raw hook payload ids
+5. Ingest stores `conversation_id` + `payload.cbmain` → Cockpit Execution log joins by
+   `runtime_run_id` via `chytr_logs_list`.
 
 ## P1b — ingest guarantee
 
@@ -50,7 +68,9 @@ On chytr Supabase (`xbvbivmvrozdesdkormu`):
 1. `025_mcp_audit_log.sql`
 2. `026_agent_logs_correlation_coverage.sql`
 
-## Fleet env (dispatch runtimes)
+## Fleet env (optional override)
+
+Prefer the **file bridge** above. Env still works when a runtime can inject per-session env:
 
 ```
 CHYTR_RUNTIME_RUN_ID=<external_run_id>
