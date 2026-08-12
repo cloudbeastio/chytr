@@ -6,6 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "test": "node scripts/mcp-manifest-drift.test.mjs && node --experimental-strip-types scripts/cbmain-contract.test.mjs",
     "db:migrate:021": "./scripts/run-021-vault.sh"
   },
   "dependencies": {
