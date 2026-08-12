@@ -5,7 +5,17 @@
 #   chytr-stamp-correlation.sh '{"runtime_run_id":"bc-…","cbmain":{...}}'
 #   chytr-stamp-correlation.sh --from-session-url 'https://cursor.com/agents/bc-…' --cbmain '{...}'
 set -euo pipefail
-ROOT="${CLAUDE_PROJECT_DIR:-${CURSOR_PROJECT_DIR:-$PWD}}"
+
+# Prefer explicit file; else env project dir; else PWD. If env project dir looks
+# like a stale temp (no .git) and PWD is a repo, use PWD.
+_root_cand="${CLAUDE_PROJECT_DIR:-${CURSOR_PROJECT_DIR:-}}"
+if [ -n "$_root_cand" ] && [ -d "$_root_cand/.git" ]; then
+  ROOT="$_root_cand"
+elif [ -d "$PWD/.git" ] || [ -d "$PWD/.chytr" ] || [ -f "$PWD/package.json" ]; then
+  ROOT="$PWD"
+else
+  ROOT="${_root_cand:-$PWD}"
+fi
 OUT="${CHYTR_CORRELATION_FILE:-$ROOT/.chytr/correlation.json}"
 mkdir -p "$(dirname "$OUT")"
 
