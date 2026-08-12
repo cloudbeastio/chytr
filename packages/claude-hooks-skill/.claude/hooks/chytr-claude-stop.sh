@@ -44,6 +44,9 @@ fi
 
 RAW_PAYLOAD="$(cat 2>/dev/null || echo "{}")"
 
+# shellcheck source=chytr-correlation.sh
+source "$(cd "$(dirname "${BASH_SOURCE[0]:-.}")" && pwd)/chytr-correlation.sh"
+
 if [ -z "$CHYTR_URL" ] || [ -z "$CHYTR_API_KEY" ]; then
   exit 0
 fi
@@ -71,6 +74,7 @@ BODY=$(cat <<EOF
   "chyt_id": $([ -n "$CHYT_ID" ] && echo "\"$CHYT_ID\"" || echo "null"),
   "agent_id": $([ -n "$CHYTR_AGENT_ID" ] && echo "\"$CHYTR_AGENT_ID\"" || echo "null"),
   "source_repo": $([ -n "$SOURCE_REPO" ] && echo "\"$SOURCE_REPO\"" || echo "null"),
+  $CORRELATION_JSON_FIELDS,
   "raw_payload": $RAW_PAYLOAD
 }
 EOF

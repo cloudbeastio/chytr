@@ -35,6 +35,8 @@ This copies `.cursor/hooks.json` and the three hook scripts into your repo's `.c
 | `WORK_ORDER_ID` | Optional | ID of the active work order — scopes all events to a task |
 | `CHYTR_AGENT_ID` | Optional | Agent identifier — useful when running multiple agents |
 | `CHYTR_REPO` | Optional | Override repo URL — auto-detected from `git remote get-url origin` if unset |
+| `CHYTR_RUNTIME_RUN_ID` | Optional | Runtime run id (`bc-…` / `session_…`) stamped as `agent_logs.conversation_id` when hook payload omits it |
+| `CHYTR_CBMAIN_JSON` | Optional | JSON breadcrumb object written to `payload.cbmain` (work_item/task/project/repo/branch/session_url/lane) |
 
 ### Local setup (`.env.local`)
 

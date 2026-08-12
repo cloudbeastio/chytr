@@ -56,6 +56,8 @@ chytr's ingest endpoint treats `event_type: session_end` as **terminal**: it fli
 | `CHYTR_AGENT_ID` | Optional | Agent identifier — useful when running multiple agents |
 | `CHYTR_REPO` | Optional | Override repo URL — auto-detected from `git remote get-url origin` if unset |
 | `CHYTR_ENFORCE` | Optional | `1` enables enforce mode (equivalent to a `.chytr/enforce` file) |
+| `CHYTR_RUNTIME_RUN_ID` | Optional | Runtime run id stamped as `agent_logs.conversation_id` when payload omits it |
+| `CHYTR_CBMAIN_JSON` | Optional | JSON breadcrumb → `payload.cbmain` (cb-main work/task/project refs) |
 
 Hooks auto-source `.env.local` from the project root (`CLAUDE_PROJECT_DIR`) when `CHYTR_API_KEY` isn't already set. If `CHYTR_URL`/`CHYTR_PUBLIC_URL` or `CHYTR_API_KEY` are unset, all hooks exit silently — no errors, no noise.
 
