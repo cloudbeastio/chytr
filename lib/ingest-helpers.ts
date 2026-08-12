@@ -1,23 +1,43 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
+import type { CbmainBreadcrumb } from '@/lib/cbmain-contract'
 
 /** Base schema fields sent with every Cursor hook event — preserve for analytics */
-function baseSchema(raw: Record<string, unknown>): Record<string, unknown> {
-  return {
+function baseSchema(
+  raw: Record<string, unknown>,
+  extras?: { conversationId?: string | null; cbmain?: CbmainBreadcrumb | null }
+): Record<string, unknown> {
+  const conversation_id =
+    extras?.conversationId ??
+    (typeof raw.conversation_id === 'string' ? raw.conversation_id : null) ??
+    (typeof raw.session_id === 'string' ? raw.session_id : null) ??
+    null
+  const out: Record<string, unknown> = {
     model: raw.model ?? null,
-    conversation_id: raw.conversation_id ?? null,
+    conversation_id,
     user_email: raw.user_email ?? null,
   }
+  if (extras?.cbmain) {
+    out.cbmain = extras.cbmain
+  } else if (raw.cbmain && typeof raw.cbmain === 'object') {
+    out.cbmain = raw.cbmain
+  }
+  return out
 }
 
-function withBase(eventPayload: Record<string, unknown>, raw: Record<string, unknown>): Record<string, unknown> {
-  return { ...eventPayload, ...baseSchema(raw) }
+function withBase(
+  eventPayload: Record<string, unknown>,
+  raw: Record<string, unknown>,
+  extras?: { conversationId?: string | null; cbmain?: CbmainBreadcrumb | null }
+): Record<string, unknown> {
+  return { ...eventPayload, ...baseSchema(raw, extras) }
 }
 
 export function normalizePayload(
   eventType: string,
-  raw: Record<string, unknown>
+  raw: Record<string, unknown>,
+  extras?: { conversationId?: string | null; cbmain?: CbmainBreadcrumb | null }
 ): Record<string, unknown> {
-  const base = baseSchema(raw)
+  const base = baseSchema(raw, extras)
   switch (eventType) {
     case 'tool_call':
     case 'tool_result':
@@ -31,7 +51,8 @@ export function normalizePayload(
           result_length:
             raw.result_length ?? (typeof raw.result === 'string' ? raw.result.length : null),
         },
-        raw
+        raw,
+        extras
       )
     case 'tool_failure':
       return withBase(
@@ -43,7 +64,8 @@ export function normalizePayload(
           is_interrupt: raw.is_interrupt ?? null,
           duration_ms: raw.duration ?? raw.duration_ms ?? null,
         },
-        raw
+        raw,
+        extras
       )
     case 'shell_execution':
       return withBase(
@@ -56,7 +78,8 @@ export function normalizePayload(
             typeof raw.stderr === 'string' ? raw.stderr.length : (raw.stderr_length ?? 0),
           duration_ms: raw.duration ?? raw.duration_ms ?? null,
         },
-        raw
+        raw,
+        extras
       )
     case 'file_edit': {
       const edits = Array.isArray(raw.edits) ? raw.edits : []
@@ -77,7 +100,8 @@ export function normalizePayload(
           lines_removed: linesRemoved,
           edit_type: raw.edit_type ?? raw.editType ?? 'edit',
         },
-        raw
+        raw,
+        extras
       )
     }
     case 'mcp_execution':
@@ -89,7 +113,8 @@ export function normalizePayload(
           success: raw.success ?? true,
           duration_ms: raw.duration ?? raw.duration_ms ?? null,
         },
-        raw
+        raw,
+        extras
       )
     case 'skill_load':
       return withBase(
@@ -98,7 +123,8 @@ export function normalizePayload(
           repo_id: raw.repo_id ?? null,
           agent_id: raw.agent_id ?? null,
         },
-        raw
+        raw,
+        extras
       )
     case 'agent_thought':
     case 'agent_response': {
@@ -109,7 +135,8 @@ export function normalizePayload(
           content_preview: content.substring(0, 200),
           duration_ms: raw.duration_ms ?? raw.duration ?? null,
         },
-        raw
+        raw,
+        extras
       )
     }
     case 'subagent_start':
@@ -118,7 +145,8 @@ export function normalizePayload(
           subagent_type: raw.subagent_type ?? '',
           prompt: raw.prompt ?? '',
         },
-        raw
+        raw,
+        extras
       )
     case 'subagent_stop':
       return withBase(
@@ -129,7 +157,8 @@ export function normalizePayload(
           result: raw.result ?? null,
           agent_transcript_path: raw.agent_transcript_path ?? null,
         },
-        raw
+        raw,
+        extras
       )
     case 'approval_requested':
       return withBase(
@@ -139,7 +168,8 @@ export function normalizePayload(
           options: raw.options ?? [],
           context_preview: String(raw.context ?? '').substring(0, 200),
         },
-        raw
+        raw,
+        extras
       )
     case 'session_start':
       return withBase(
@@ -148,7 +178,8 @@ export function normalizePayload(
           composer_mode: raw.composer_mode ?? null,
           is_background_agent: raw.is_background_agent ?? null,
         },
-        raw
+        raw,
+        extras
       )
     case 'session_end':
       return withBase(
@@ -162,7 +193,8 @@ export function normalizePayload(
           duration_ms: raw.duration_ms ?? raw.duration ?? null,
           is_background_agent: raw.is_background_agent ?? null,
         },
-        raw
+        raw,
+        extras
       )
     case 'stop':
       return withBase(
@@ -170,7 +202,8 @@ export function normalizePayload(
           status: raw.status ?? null,
           loop_count: raw.loop_count ?? null,
         },
-        raw
+        raw,
+        extras
       )
     case 'preCompact':
     case 'pre_compact':
@@ -182,7 +215,8 @@ export function normalizePayload(
           trigger: raw.trigger ?? null,
           is_first_compaction: raw.is_first_compaction ?? raw.isFirstCompaction ?? null,
         },
-        raw
+        raw,
+        extras
       )
     default:
       return { ...raw, ...base }
