@@ -86,9 +86,24 @@ Local RPC first, live `chytr_logs_list` fallback until backfill catches up.
 | **P0** | This plan | both | n/a |
 | **P1** | Mirror table + `chytr-log-ingest` + list RPC | cb-wiki-2 | merge → Supabase GitHub integration |
 | **P2** | Ingest hook + backfill route | chytr | merge → Vercel |
-| **P3** | Joe sets `CBMAIN_LOG_SYNC_*` (chytr Vercel) + `CHYTR_LOG_SYNC_KEY` (cb-main Edge) | secrets | Joe |
-| **P4** | Run backfill until cursor done (~52k / 200 ≈ 260 pages; ~6 HTTP calls at 50 batches) | chytr API | agent/Joe |
-| **P5** | Cockpit local-first (this PR) | cb-wiki-2 | Vercel w/ merge |
+| **P3** | Joe: Cockpit **Settings → Integrations → Chytr log drain** (URL + chk_ + sync key). Same sync key on chytr Vercel `CBMAIN_LOG_SYNC_*` | Cockpit UI + chytr Vercel | Joe |
+| **P4** | Integrations → **Test connection** then **Run backfill** until mirror_rows catch up | Cockpit UI | Joe / cockpit-qa |
+| **P5** | Work-item drawer Execution log shows local mirror rows | Cockpit | cockpit-qa |
+
+## Done = UI tests (`/cockpit-qa`)
+
+| # | Check | Pass |
+|---|--------|------|
+| D1 | `/settings/integrations` shows **Chytr log drain** card | h2 + URL/API/sync fields |
+| D2 | Save drain (URL + chk_ + Generate sync key) | flash-ok; status shows API key set + sync key set |
+| D3 | **Test connection** | flash-ok "Chytr connection OK" |
+| D4 | **Run backfill (5 pages)** | flash-ok with pushed>0 OR chytr 503 until chytr env set |
+| D5 | Mirror rows counter rises after successful backfill | `mirror_rows` increases |
+| D6 | Work item with `runtime_run_id` → Execution log | rows from mirror (not "Chytr not configured") |
+| D7 | Smoke A–G on Integrations | auth, nav Admin→Integrations, route, heading, deep link |
+
+Gate: D1 required on preview. D2–D6 need migrations merged (merge-owned) + chytr `CBMAIN_LOG_SYNC_*`.
+
 
 ## Gate A
 
