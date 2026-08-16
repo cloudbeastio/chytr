@@ -4,6 +4,7 @@ import { authenticateApiKey } from '@/lib/api-auth'
 import { normalizePayload, checkDefinitionOfDone } from '@/lib/ingest-helpers'
 import { normalizeRepoUrl } from '@/lib/repo-utils'
 import { resolveCbmain, resolveConversationId } from '@/lib/cbmain-contract'
+import { syncOneLog, type AgentLogRow } from '@/lib/cbmain-log-sync'
 
 const VALID_EVENT_TYPES = [
   'session_start',
@@ -84,21 +85,31 @@ export async function POST(req: NextRequest) {
       event_type === 'preCompact' ? 'pre_compact' : event_type
     const model = (payload.model as string) ?? null
 
-    const { error: insertError } = await supabase.from('agent_logs').insert({
-      user_id: auth.userId,
-      chyt_id: chytId,
-      agent_id: body.agent_id ?? null,
-      event_type: eventTypeForDb,
-      payload,
-      source_repo: repo?.url ?? null,
-      source_repo_name: repo?.name ?? null,
-      model,
-      conversation_id: conversationId,
-    })
+    const { data: inserted, error: insertError } = await supabase
+      .from('agent_logs')
+      .insert({
+        user_id: auth.userId,
+        chyt_id: chytId,
+        agent_id: body.agent_id ?? null,
+        event_type: eventTypeForDb,
+        payload,
+        source_repo: repo?.url ?? null,
+        source_repo_name: repo?.name ?? null,
+        model,
+        conversation_id: conversationId,
+      })
+      .select(
+        'id, chyt_id, agent_id, event_type, payload, sequence_number, model, conversation_id, source_repo_name, created_at'
+      )
+      .single()
 
     if (insertError) {
       console.error('[v1/ingest] insert', insertError)
       return NextResponse.json({ error: insertError.message }, { status: 500 })
+    }
+
+    if (inserted) {
+      syncOneLog(inserted as AgentLogRow)
     }
 
     if (body.agent_id) {
