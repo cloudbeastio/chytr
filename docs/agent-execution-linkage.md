@@ -12,7 +12,9 @@
 | chytr | `agent_logs.conversation_id` | Same runtime run id |
 | chytr | `agent_logs.payload.cbmain` | Breadcrumbs only (work_item/task/project/repo/branch/session_url/lane) |
 
-No data copy. cb-main owns work identity; chytr owns execution logs.
+chytr remains write SoT. Joe 2026-08-16: **also copy** redacted rows into
+cb-main `ops.chytr_agent_logs` (live ingest + backfill). Plan:
+`docs/cb-main-log-sync-plan.md`.
 
 **Do not** use Claude Code's raw UUID `session_id` as the join key unless it equals a
 cb-main-stamped `session_…` / `bc-…` value.

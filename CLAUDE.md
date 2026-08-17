@@ -16,8 +16,11 @@ Router + Supabase + license-key gating (n8n model). Cloud: `app.chytr.ai`
 ## Architecture (do not invent alternate paths)
 Trigger → INSERT `chyts` → launch agent (Cursor API) → hooks POST
 `/api/v1/ingest` → `agent_logs` + Realtime dashboard → completion → embed →
-knowledge. Prefer Next `/api/v1/*` + `CHYTR_API_KEY` over calling Edge URLs from
-hooks. Schema rename: `work_orders`→`chyts`, `contracts`→`projects` (migration 024).
+knowledge. After ingest, best-effort redacted push to cb-main
+`chytr-log-ingest` (`CBMAIN_LOG_SYNC_*`; never fail ingest). Backfill:
+`POST /api/v1/cbmain-sync/backfill`. Prefer Next `/api/v1/*` + `CHYTR_API_KEY`
+over calling Edge URLs from hooks. Schema rename: `work_orders`→`chyts`,
+`contracts`→`projects` (migration 024).
 
 ## Build / run
 - Docker (preferred local): `cp .env.example .env` → `docker compose up` → http://localhost:3000
