@@ -47,6 +47,7 @@ repo. Cockpit reference design: `cb-wiki-2/agent-outputs/architecture/2026-08-20
 | Routines mint tasks | `ops.routines` + mint RPC | jobs launch directly | rewrite `run_scheduled_job` to mint `todo` |
 | Inbound webhook → task | none (internal producers) | none | **new** — chytr ships it first |
 | Agent claim/complete API | MCP `task_*` | none | add to `/api/mcp` + `/api/v1` |
+| Entity resolution | `search_entities` + resolve RPC + merge approvals | flat `knowledge` vectors only | port (§8b) — the compounding asset |
 
 ---
 
@@ -166,6 +167,37 @@ Adapters (`lib/services/runtimes/`):
   networking: its own loop claims → works → completes; hooks stream the trace.
 - Docs pass: kill `work_orders` drift, document tasks/desks/routines/webhooks.
 
+## 8b. Entity resolution (Phase 7 — the compounding asset)
+
+Port cb-main's entity resolution layer. It's what turns chytr's per-customer data from flat
+logs/learnings into a deduped entity graph that gets smarter with every human confirm — the
+same MDM golden-record machinery proven in cb-main. chytr already has both prerequisites:
+the `embed` edge fn is **gte-small 384d — the identical vector cb-main's `search_entities`
+uses** — and an `approvals` HITL table for the merge gate.
+
+What ports (cb-main sources named for the builder):
+
+1. **`entities` table** (from `search_entities`, `20260423120000_search_entity_resolution.sql`):
+   `entity_type` (loose text: `person|org|repo|custom`), `canonical_name`, `aliases text[]`,
+   `embedding vector(384)`, `properties jsonb`, `status`, `record_table`/`record_id` (link to
+   a chytr row), `first_seen`/`last_seen`, `user_id` RLS. HNSW index + `lower(canonical_name)` index.
+2. **Resolve RPC** (from `search_entities_resolve` + its hardening migrations): exact match →
+   alias match → vector KNN, **prefer canonical over alias**, suppress archived/dangling.
+3. **Upsert guard** (from `entity_upsert_two_token_guard`): 2+ word tokens required for vector
+   merge + same `entity_type`; single-token names only merge on exact match. Ships day one —
+   this rule is why cb-main stopped minting garbage merges.
+4. **Never auto-merge** (cb-main invariant): ambiguous match → merge-proposal row in chytr's
+   existing `approvals` (options = candidate entities). Human confirm appends the variant to
+   `aliases` (next time it resolves instantly) + records the decision; reject creates a new
+   entity. The confirm/reject exhaust is the asset.
+5. **Wire-in points**: `knowledge.entity_ids uuid[]` (learnings link to canonical entities),
+   agent-complete extraction resolves mentioned entities before writing knowledge, MCP tools
+   `entity_match_search` + `entity_get`, and a `/knowledge` UI upgrade: entity browser
+   (canonical name, aliases, linked learnings/tasks).
+
+License: bundle with knowledge loop (Pro+). Out of v1: scorecards, enrichment-worker,
+field_provenance/field_history — add if clients pull for CRM-grade audit.
+
 ## 9. Phases (recap)
 
 | Phase | Ships | Depends |
@@ -177,6 +209,7 @@ Adapters (`lib/services/runtimes/`):
 | 4 | Inbound webhook endpoint + UI | 2 |
 | 5 | Desks org chart + task board | 1 (UI parallel to 2–4) |
 | 6 | MCP task tools + docs rename | 1 |
+| 7 | Entity resolution (§8b) — entities table, resolve RPC, merge approvals, knowledge link | 1 (independent of 2–5) |
 
 ## 10. Out of scope v1 (deliberate)
 
@@ -196,3 +229,6 @@ Adapters (`lib/services/runtimes/`):
 6. Webhook runtime + inbound webhooks: Pro+ or free tier?
 7. Desk depth cap (Cockpit uses 8) — same?
 8. Keep `agents.last_heartbeat` offline logic per runtime, or only for pull runtimes?
+9. Entity types v1: `person|org|repo` enough, or customer-defined types day one?
+10. Entity extraction trigger: agent-complete only, or also live from `agent_logs` events?
+11. Entity resolution tier: bundle w/ knowledge (Pro+) confirmed?
