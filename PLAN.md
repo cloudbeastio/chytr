@@ -9,6 +9,8 @@ Register at www.chytr.ai for free license key; paid tiers unlock jobs/approvals/
 **Repo**: `cloudbeastio/chytr`
 **Supabase project**: `xbvbivmvrozdesdkormu` (us-east-1)
 
+**Active plan**: [`docs/cockpit-port-plan.md`](docs/cockpit-port-plan.md) — port Cockpit task/desk/routine model (chyts=tasks, desks org chart, runtime adapters, routines mint todo, inbound webhooks).
+
 ---
 
 ## Phase Status
